@@ -1,0 +1,68 @@
+# Implementation Progress
+
+**The detailed project tracker for Aesthetic Coach.** Where [MASTER_IMPLEMENTATION_PLAN.md § Module Progress](MASTER_IMPLEMENTATION_PLAN.md#module-progress) gives a quick-glance status per module, this document adds **Started/Completed dates** and is the authoritative record of when each module actually moved through its lifecycle — update both together, but treat this one as the source of truth for dates specifically.
+
+---
+
+## Table of Contents
+- [Phase 1 — Intelligent Fitness Platform](#phase-1--intelligent-fitness-platform)
+- [Phase 2 — AI Personal Coach](#phase-2--ai-personal-coach)
+- [Status Legend](#status-legend)
+- [How to Update This Document](#how-to-update-this-document)
+
+## Phase 1 — Intelligent Fitness Platform
+
+Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORDER.md). Task-level detail: [TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md).
+
+| Module | Status | Progress | Started | Completed |
+|---|---|---|---|---|
+| 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | Pending | 0% | — | — |
+| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | Pending | 0% | — | — |
+| 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Pending | 0% | — | — |
+| 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Pending | 0% | — | — |
+| 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
+| 6. [Workout Engine](docs/IMPLEMENTATION_ORDER.md#6-workout-engine) | Pending | 0% | — | — |
+| 7. [Exercise Library](docs/IMPLEMENTATION_ORDER.md#7-exercise-library) | Pending | 0% | — | — |
+| 8. [Workout History](docs/IMPLEMENTATION_ORDER.md#8-workout-history) | Pending | 0% | — | — |
+| 9. [Progress Tracking](docs/IMPLEMENTATION_ORDER.md#9-progress-tracking) | Pending | 0% | — | — |
+| 10. [Habits](docs/IMPLEMENTATION_ORDER.md#10-habits) | Pending | 0% | — | — |
+| 11. [Analytics](docs/IMPLEMENTATION_ORDER.md#11-analytics) | Pending | 0% | — | — |
+| 12. [Notifications](docs/IMPLEMENTATION_ORDER.md#12-notifications) | Pending | 0% | — | — |
+| 13. [AI Recommendations](docs/IMPLEMENTATION_ORDER.md#13-ai-recommendations) | Pending | 0% | — | — |
+| 14. [Testing](docs/IMPLEMENTATION_ORDER.md#14-testing) | Pending | 0% | — | — |
+| 15. [Deployment](docs/IMPLEMENTATION_ORDER.md#15-deployment) | Pending | 0% | — | — |
+| 16. [Production Launch](docs/IMPLEMENTATION_ORDER.md#16-production-launch) | Pending | 0% | — | — |
+
+**Phase 1 overall progress: 0 of 16 modules complete (0%).**
+
+## Phase 2 — AI Personal Coach
+
+Blocked until [Phase 1 Exit Criteria](docs/PHASED_RELEASE_STRATEGY.md#exit-criteria-for-each-phase) are met. Module-level detail for Phase 2 is intentionally not broken down to the same granularity as Phase 1 yet — see [VERSION_HISTORY.md § Scope](VERSION_HISTORY.md#scope). Tracked at the sprint level for now, per [MASTER_IMPLEMENTATION_PLAN.md § Sprint Tracker](MASTER_IMPLEMENTATION_PLAN.md#sprint-tracker); this table will be expanded to module granularity when Phase 2 planning formally begins.
+
+| Sprint | Status | Progress | Started | Completed |
+|---|---|---|---|---|
+| [Phase 2 · Sprint 1 — Conversational Coach Foundation](docs/16-development-roadmap.md#phase-2--sprint-1--conversational-coach-foundation) | Blocked | 0% | — | — |
+| [Phase 2 · Sprint 2 — Nutrition Coach & Recovery Coach](docs/16-development-roadmap.md#phase-2--sprint-2--nutrition-coach--recovery-coach) | Blocked | 0% | — | — |
+| [Phase 2 · Sprint 3 — Habit Coach, Context Memory & Adaptive Plans](docs/16-development-roadmap.md#phase-2--sprint-3--habit-coach-context-memory--adaptive-plans) | Blocked | 0% | — | — |
+| [Phase 2 · Sprint 4 — Predictive Coaching & Advanced Analytics](docs/16-development-roadmap.md#phase-2--sprint-4--predictive-coaching--advanced-analytics) | Blocked | 0% | — | — |
+| [Phase 2 · Sprint 5 — Wearable Integrations, Community, Challenges & Leaderboards](docs/16-development-roadmap.md#phase-2--sprint-5--wearable-integrations-community-challenges--leaderboards) | Blocked | 0% | — | — |
+| [Phase 2 · Sprint 6 — Testing, Hardening & Phase 2 Launch](docs/16-development-roadmap.md#phase-2--sprint-6--testing-hardening--phase-2-launch) | Blocked | 0% | — | — |
+
+## Status Legend
+
+| Status | Meaning |
+|---|---|
+| **Pending** | Not started, not blocked — eligible to begin once its dependencies (per [MODULE_DEPENDENCIES.md](docs/MODULE_DEPENDENCIES.md)) are met |
+| **Blocked** | Not started, explicitly gated on something outside this module (e.g., all of Phase 2 is blocked on Phase 1 launch) |
+| **In Progress** | Actively being worked on |
+| **Testing** | Implementation complete, in the testing/review pass before being marked done |
+| **Complete** | Meets its [Definition of Done](docs/IMPLEMENTATION_ORDER.md) and has a merged, tested PR |
+
+**Progress** is an estimate (0/25/50/75/100%) based on completed [TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md) tasks within the module, not a precise metric — don't over-invest in exact percentages.
+
+## How to Update This Document
+
+- Update the **Status**, **Progress**, **Started**, and **Completed** columns as work happens — ideally in the same PR that changes the module's status, per [Development Workflow § Documentation Updates](docs/DEVELOPMENT_WORKFLOW.md#documentation-updates).
+- Also update [MASTER_IMPLEMENTATION_PLAN.md § Module Progress](MASTER_IMPLEMENTATION_PLAN.md#module-progress) and [MASTER_IMPLEMENTATION_PLAN.md § Sprint Tracker](MASTER_IMPLEMENTATION_PLAN.md#sprint-tracker) at the same time — the three should never disagree about whether a module is done.
+- Add a [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) entry whenever a module's status changes meaningfully (started, completed) — this document says *what state something is in*, the log says *what happened and when in narrative form*.
+- When Phase 1 completes and Phase 2 planning begins, expand the Phase 2 table above to module granularity, matching the pattern used for Phase 1.
