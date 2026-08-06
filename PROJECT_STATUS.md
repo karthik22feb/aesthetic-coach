@@ -25,6 +25,8 @@
 |---|---|
 | **Planning** | Complete |
 | **Implementation** | Ready to Begin |
+| **Development Environment** | Linux Server (`/var/www/html/aesthetic-coach` on `10.24.8.219`, Ubuntu 24.04.3 LTS) — migrated 2026-08-06 from local Windows/XAMPP; see [SERVER_SETUP_REPORT.md](SERVER_SETUP_REPORT.md) |
+| **Status** | Ready for Infrastructure Implementation |
 | **Current Sprint** | Sprint 1 ([Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup)) |
 | **Current Module** | Infrastructure ([Module 1](docs/IMPLEMENTATION_ORDER.md#1-infrastructure)) |
 | **Next Task** | Infrastructure Scaffolding — see [NEXT_TASK.md](NEXT_TASK.md) and [FIRST_IMPLEMENTATION_SESSION.md](FIRST_IMPLEMENTATION_SESSION.md) |
