@@ -1,3 +1,6 @@
+# Root (docker-compose variable substitution)
+/.env
+
 # Laravel (backend/)
 backend/vendor/
 backend/.env
