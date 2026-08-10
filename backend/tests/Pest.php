@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /*
@@ -8,14 +9,33 @@ use Tests\TestCase;
 | Test Case
 |--------------------------------------------------------------------------
 |
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind different classes or traits.
+| Feature tests run against real MySQL (not SQLite-in-memory), per
+| docs/10-testing-strategy.md section 5 -- RefreshDatabase wraps each test
+| in a transaction and rolls back after, using the ephemeral schema in
+| aesthetic_coach_test (see phpunit.xml).
+|
+*/
+
+/*
+|--------------------------------------------------------------------------
+| Rate Limiter Isolation
+|--------------------------------------------------------------------------
+|
+| The test cache driver (array, see phpunit.xml) is an in-process store that
+| is NOT reset between test methods the way RefreshDatabase resets the DB --
+| without this, the 'auth' rate limiter's per-IP counters accumulate across
+| every test in the run, causing unrelated tests to fail with 429 once the
+| shared bucket is exhausted. Flushing before each test keeps rate-limiting
+| itself genuinely exercised (RateLimitTest.php still hits real 429s) while
+| giving every other test a clean slate.
 |
 */
 
 pest()->extend(TestCase::class)
- // ->use(RefreshDatabase::class)
+    ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        Cache::flush();
+    })
     ->in('Feature');
 
 /*
@@ -44,7 +64,17 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * A minimal valid /auth/register payload, per docs/features/authentication.md
+ * Validation Rules and BR-1 (password policy).
+ */
+function validRegistrationPayload(array $overrides = []): array
 {
-    // ..
+    return array_merge([
+        'name' => 'Priya Shah',
+        'email' => 'priya@example.com',
+        'password' => 'correct-horse-battery1',
+        'platform' => 'ios',
+        'deviceName' => 'iPhone 15',
+    ], $overrides);
 }

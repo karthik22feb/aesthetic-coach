@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Modules\Auth\Models\User;
 
 return [
 
@@ -40,6 +40,13 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        // Custom JWT guard per ADR-0005 (docs/adr/0005-jwt-refresh-token-auth.md)
+        // -- driver registered via Auth::viaRequest() in AuthServiceProvider.
+        'api' => [
+            'driver' => 'jwt',
             'provider' => 'users',
         ],
     ],

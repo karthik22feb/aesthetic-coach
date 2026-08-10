@@ -39,7 +39,7 @@ class ModuleServiceProvider extends ServiceProvider
                 continue;
             }
 
-            $providerClass = "App\Modules\{$module}\{$module}ServiceProvider";
+            $providerClass = 'App\\Modules\\'.$module.'\\'.$module.'ServiceProvider';
             $providerPath = $modulesPath.DIRECTORY_SEPARATOR.$module.DIRECTORY_SEPARATOR.$module.'ServiceProvider.php';
 
             if (is_file($providerPath) && class_exists($providerClass)) {

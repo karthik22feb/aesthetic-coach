@@ -50,4 +50,38 @@ Copy this template for every new entry:
 
 ## Entries
 
-*No entries yet. The first entry is added the first time an implementation session makes a decision meeting the criteria in [DEVELOPMENT_WORKFLOW.md § When to Record an Engineering Decision](docs/DEVELOPMENT_WORKFLOW.md#when-to-record-an-engineering-decision).*
+### 2026-08-07 — JWT encode/decode library: firebase/php-jwt
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 9 (Authentication Foundation)
+**Decision Summary:** Use `firebase/php-jwt` for RS256 JWT access token encode/decode, since ADR-0005 mandates custom JWT auth but doesn't name a library.
+
+**Background:**
+ADR-0005 explicitly rejects Laravel Sanctum and Passport in favor of custom JWT access tokens (RS256, 15-minute TTL) plus opaque rotating refresh tokens. The ADR specifies the token *design* but leaves the actual JWT encode/decode mechanism unspecified — implementing RS256 signing/verification by hand (base64url encoding, OpenSSL signature calls, timing-safe comparison) is exactly the kind of security-sensitive low-level code that should not be hand-rolled.
+
+**Alternatives Considered:**
+- Hand-rolled JWT encode/decode via raw `openssl_sign`/`openssl_verify` calls — rejected: reinventing a well-standardized, security-sensitive primitive for no benefit; higher risk of a subtle signature-verification bug.
+- `lcobucci/jwt` — a capable alternative with a more object-oriented builder API, but heavier surface area than this project needs (just encode a claims array, decode and verify it).
+- `firebase/php-jwt` (chosen) — minimal, widely-used (the de facto standard for exactly this use case in PHP), actively maintained, does one thing: `JWT::encode()`/`JWT::decode()` against a signing key and algorithm.
+
+**Final Decision:**
+Added `firebase/php-jwt` (^7.1) as a `require` dependency. `App\Modules\Auth\Services\TokenService` wraps it entirely — no other class touches the library directly.
+
+**Reasoning:**
+`firebase/php-jwt` is a pure encode/decode utility, not an auth framework — it doesn't reintroduce the session/route assumptions ADR-0005 explicitly moved away from when rejecting Sanctum/Passport. Isolating it behind `TokenService` means swapping it later (per ADR-0005's own "Future Review Criteria") only touches one class.
+
+**Impact:**
+Every future session issuing or validating access tokens (refresh-token rotation, OAuth login, any authenticated endpoint) depends on `TokenService`, not on `firebase/php-jwt` directly. The RS256 keypair is generated per-environment (see Security Review in this session's report) and never committed.
+
+**Related Files:**
+- `backend/composer.json`
+- `backend/app/Modules/Auth/Services/TokenService.php`
+- `backend/config/jwt.php`
+
+**Related Documentation:**
+- [ADR-0005](docs/adr/0005-jwt-refresh-token-auth.md)
+- [Backend Architecture § 1](docs/07-backend-architecture.md#1-folder-structure)
+
+**Git Commit:** `<pending — see this session's Suggested Git Commit>`
+
+**Author:** Claude (AI Software Engineer), Sprint 1 Session 3 — Authentication Foundation
