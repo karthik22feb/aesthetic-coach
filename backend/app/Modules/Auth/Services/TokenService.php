@@ -9,6 +9,7 @@ use Carbon\CarbonImmutable;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use stdClass;
 use UnexpectedValueException;
@@ -17,11 +18,6 @@ use UnexpectedValueException;
  * Issues and validates the two halves of the auth session per ADR-0005:
  * short-lived stateless JWT access tokens (RS256) and opaque, server-side-hashed,
  * rotating refresh tokens with a family_id rotation-chain (BR-3, BR-4).
- *
- * Refresh-token rotation itself (replacing a used token with a new one in the
- * same family, and revoking the family on reuse) is not implemented yet -- this
- * class only prepares the primitives (family_id assignment, single-token revoke)
- * that the future /auth/refresh endpoint will build on.
  */
 class TokenService
 {
@@ -64,13 +60,15 @@ class TokenService
     }
 
     /**
-     * Issues a new refresh token for the given user/device, starting a new
-     * rotation family. Returns the plaintext token (returned to the client
-     * once, never stored) alongside the persisted record.
+     * Issues a new refresh token for the given user/device. Omitting
+     * $familyId starts a new rotation family (register/login); passing the
+     * previous token's family_id continues it (refresh rotation) -- see
+     * AuthService::refresh(). Returns the plaintext token (returned to the
+     * client once, never stored) alongside the persisted record.
      *
      * @return array{token: string, model: AuthRefreshToken}
      */
-    public function issueRefreshToken(User $user, Device $device): array
+    public function issueRefreshToken(User $user, Device $device, ?string $familyId = null): array
     {
         $plainToken = Str::random(64);
 
@@ -78,7 +76,7 @@ class TokenService
             'user_id' => $user->id,
             'device_id' => $device->id,
             'token_hash' => hash('sha256', $plainToken),
-            'family_id' => (string) Str::uuid(),
+            'family_id' => $familyId ?? (string) Str::uuid(),
             'expires_at' => CarbonImmutable::now()->addDays(config('jwt.refresh_ttl_days')),
         ]);
 
@@ -88,6 +86,31 @@ class TokenService
     public function revoke(AuthRefreshToken $token): void
     {
         $token->update(['revoked_at' => CarbonImmutable::now()]);
+    }
+
+    /**
+     * Revokes every still-active token in a rotation family -- used when
+     * reuse of an already-rotated token is detected (BR-3), forcing every
+     * device on that family to re-authenticate. Callers are expected to
+     * already be inside a transaction with the relevant rows locked (see
+     * AuthService::refresh()).
+     *
+     * @return Collection<int, AuthRefreshToken> the tokens that were revoked
+     */
+    public function revokeFamily(string $familyId): Collection
+    {
+        $tokens = AuthRefreshToken::where('family_id', $familyId)
+            ->whereNull('revoked_at')
+            ->lockForUpdate()
+            ->get();
+
+        $now = CarbonImmutable::now();
+
+        foreach ($tokens as $token) {
+            $token->update(['revoked_at' => $now]);
+        }
+
+        return $tokens;
     }
 
     protected function privateKey(): string

@@ -5,6 +5,7 @@ namespace App\Modules\Auth\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\LogoutRequest;
+use App\Modules\Auth\Http\Requests\RefreshRequest;
 use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Models\User;
@@ -29,6 +30,17 @@ class AuthController extends Controller
         $session = $this->authService->login($request->toDto());
 
         return $this->sessionResponse($session, 200);
+    }
+
+    public function refresh(RefreshRequest $request): JsonResponse
+    {
+        $session = $this->authService->refresh($request->string('refreshToken')->toString());
+
+        return ApiResponse::success([
+            'accessToken' => $session['accessToken'],
+            'refreshToken' => $session['refreshToken'],
+            'expiresIn' => $session['expiresIn'],
+        ], 200);
     }
 
     public function logout(LogoutRequest $request): Response
