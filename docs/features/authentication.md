@@ -88,7 +88,8 @@ BR-1 (password policy), BR-2 (unverified accounts blocked from AI features), BR-
 | Email | Valid format, unique, max 190 chars |
 | Password | ≥ 10 chars, ≥ 1 letter + 1 number (BR-1) |
 | Name | 1–120 chars, required |
-| Device name | Auto-populated from device model, editable, max 120 chars |
+| Device name | Auto-populated from device model, editable, max 120 chars. Submitted on register, login, and OAuth (optional -- server defaults to a generic name derived from platform if omitted) |
+| Platform | Required on register, login, and OAuth. One of `ios`, `android` -- persisted on the created/matched `devices` row (Database Design section 3.1, 04-database-design.md) |
 
 ## APIs
 See [API Specification § 3](../05-api-specification.md#3-authentication-flow) and full request/response examples in [API Examples — Auth](../api-examples/auth.md): `POST /auth/register`, `POST /auth/login`, `POST /auth/oauth/google`, `POST /auth/oauth/apple`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/sessions`, `DELETE /auth/sessions/{deviceId}`, `POST /auth/password/forgot`, `POST /auth/password/reset`.

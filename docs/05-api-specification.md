@@ -31,9 +31,12 @@
 See sequence diagram in [System Architecture § 3.1](03-system-architecture.md#31-authentication-login--token-refresh).
 
 ### `POST /auth/register`
+
+`platform` (`ios`|`android`) is required; `deviceName` is optional (server defaults to a generic name derived from `platform` if omitted) -- both apply to every endpoint on this page that issues a `refreshToken`, since each refresh token is tied to a `devices` row (Database Design section 3.1, 04-database-design.md).
+
 ```json
 // Request
-{ "name": "Priya Shah", "email": "priya@example.com", "password": "correct-horse-battery" }
+{ "name": "Priya Shah", "email": "priya@example.com", "password": "correct-horse-battery", "platform": "ios", "deviceName": "iPhone 15" }
 
 // 201 Response
 {
@@ -48,10 +51,10 @@ See sequence diagram in [System Architecture § 3.1](03-system-architecture.md#3
 ```
 
 ### `POST /auth/login`
-Body: `{ "email": "...", "password": "..." }`. Response shape identical to register.
+Body: `{ "email": "...", "password": "...", "platform": "ios", "deviceName": "iPhone 15" }` (`platform` required, `deviceName` optional -- see note above). Response shape identical to register.
 
 ### `POST /auth/oauth/google` / `POST /auth/oauth/apple`
-Body: `{ "idToken": "<provider-issued id token>", "deviceName": "iPhone 15" }`. Backend verifies the token server-side against the provider's public keys before issuing session tokens — see [System Architecture § Security Architecture](03-system-architecture.md#8-security-architecture).
+Body: `{ "idToken": "<provider-issued id token>", "platform": "ios", "deviceName": "iPhone 15" }` (`platform` required, `deviceName` optional -- see note above). Backend verifies the token server-side against the provider's public keys before issuing session tokens — see [System Architecture § Security Architecture](03-system-architecture.md#8-security-architecture).
 
 ### `POST /auth/refresh`
 Body: `{ "refreshToken": "..." }` → new `accessToken` + rotated `refreshToken`. `401 { "error": { "code": "session_revoked" } }` if reuse of a rotated token is detected (BR-3).

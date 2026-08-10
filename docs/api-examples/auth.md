@@ -16,7 +16,7 @@
 POST /api/v1/auth/register
 Content-Type: application/json
 
-{ "name": "Priya Shah", "email": "priya@example.com", "password": "correct-horse-battery" }
+{ "name": "Priya Shah", "email": "priya@example.com", "password": "correct-horse-battery", "platform": "ios", "deviceName": "iPhone 15" }
 ```
 
 **201 Success**
@@ -77,7 +77,7 @@ Content-Type: application/json
 POST /api/v1/auth/login
 Content-Type: application/json
 
-{ "email": "priya@example.com", "password": "correct-horse-battery" }
+{ "email": "priya@example.com", "password": "correct-horse-battery", "platform": "ios", "deviceName": "iPhone 15" }
 ```
 
 **200 Success** — same shape as register's 201 (see above), status 200.
