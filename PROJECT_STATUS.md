@@ -24,12 +24,12 @@
 | Field | Value |
 |---|---|
 | **Planning** | Complete |
-| **Implementation** | Ready to Begin |
+| **Implementation** | In Progress |
 | **Development Environment** | Linux Server (`/var/www/html/aesthetic-coach` on `10.24.8.219`, Ubuntu 24.04.3 LTS) — migrated 2026-08-06 from local Windows/XAMPP; see [SERVER_SETUP_REPORT.md](SERVER_SETUP_REPORT.md) |
-| **Status** | Ready for Infrastructure Implementation |
+| **Status** | Authentication Foundation merged (`v1.0.0-auth-foundation`); refresh-token rotation in progress |
 | **Current Sprint** | Sprint 1 ([Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup)) |
-| **Current Module** | Infrastructure ([Module 1](docs/IMPLEMENTATION_ORDER.md#1-infrastructure)) |
-| **Next Task** | Infrastructure Scaffolding — see [NEXT_TASK.md](NEXT_TASK.md) and [FIRST_IMPLEMENTATION_SESSION.md](FIRST_IMPLEMENTATION_SESSION.md) |
+| **Current Module** | Authentication ([Module 2](docs/IMPLEMENTATION_ORDER.md#2-authentication)) |
+| **Next Task** | Refresh Token Rotation & Session Management — see [NEXT_TASK.md](NEXT_TASK.md) |
 | **Documentation Version** | v1.0 — frozen 2026-08-06, no further planning/documentation expansion unless explicitly requested (see [Documentation Update Policy](#documentation-update-policy)) |
 | **Risk Level** | Low — no implementation risk has been incurred yet; the highest-rated risks ([Known Risks](#known-risks)) are scoped to specific future sprints, not present-tense |
 | **Documentation Health** | Excellent — 123 documents, 0 broken internal links/anchors as of the last validation pass, single-source-of-truth metadata (see [Change Management Process](#change-management-process)) |
@@ -43,13 +43,13 @@ All planning and architecture documentation (PRD through Master Implementation P
 
 ## Current Project Status
 
-**Documentation and architecture phase: complete. Implementation phase: ready to begin.**
+**Documentation and architecture phase: complete. Implementation phase: in progress.**
 
-This is the project's final planning task — after this update, no further planning or documentation expansion is performed unless explicitly requested. No Laravel or Flutter code exists in this repository yet. Every document is a specification to build against, not a description of existing code. Every future implementation session starts from [CLAUDE_SESSION_TEMPLATE.md](CLAUDE_SESSION_TEMPLATE.md).
+Laravel backend scaffolding and the Authentication Foundation (register/login/logout, security-hardened: rate limiting, CORS allow-list, fail-closed authorization, JWT issuer/leeway validation) are merged to `main` and tagged `v1.0.0-auth-foundation`. Refresh-token rotation is the current work in progress. No Flutter code exists yet. Every future implementation session starts from [CLAUDE_SESSION_TEMPLATE.md](CLAUDE_SESSION_TEMPLATE.md).
 
 ## Current Phase
 
-> **Phase 1 — Intelligent Fitness Platform**, Sprint 1 (Infrastructure module), ready to begin
+> **Phase 1 — Intelligent Fitness Platform**, Sprint 1 (Authentication module), in progress
 
 Per [Phased Release Strategy](docs/PHASED_RELEASE_STRATEGY.md), Phase 2 does not begin until Phase 1's [exit criteria](docs/PHASED_RELEASE_STRATEGY.md#exit-criteria-for-each-phase) are met.
 
@@ -59,7 +59,7 @@ Per [Phased Release Strategy](docs/PHASED_RELEASE_STRATEGY.md), Phase 2 does not
 |---|---|---|
 | Documentation (v1.0) | 100% | 117 documents across product, architecture, database, API, mobile, backend, AI, testing, ops, phased release planning, and execution framework — see [VERSION_HISTORY.md](VERSION_HISTORY.md) |
 | Execution framework | 100% | Implementation order, task breakdown, dependency graph, backlog, release checklist, workflow, AI development guide, plus the operational control documents (this file, [MASTER_IMPLEMENTATION_PLAN.md](MASTER_IMPLEMENTATION_PLAN.md), [NEXT_TASK.md](NEXT_TASK.md), [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md)) |
-| Phase 1 implementation | 0% | 0 of 7 sprints started — see [MASTER_IMPLEMENTATION_PLAN.md § Sprint Tracker](MASTER_IMPLEMENTATION_PLAN.md#sprint-tracker) |
+| Phase 1 implementation | ~5% | Sprint 1 of 7 in progress (Infrastructure + Authentication modules) — see [MASTER_IMPLEMENTATION_PLAN.md § Sprint Tracker](MASTER_IMPLEMENTATION_PLAN.md#sprint-tracker) |
 | Phase 2 implementation | 0% (blocked) | Cannot begin until Phase 1 ships |
 
 ## Completed Planning Activities

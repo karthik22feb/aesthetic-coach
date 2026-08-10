@@ -16,8 +16,8 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 
 | Module | Status | Progress | Started | Completed |
 |---|---|---|---|---|
-| 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | Pending | 0% | — | — |
-| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | Pending | 0% | — | — |
+| 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | In Progress | 50% | 2026-08-06 | — |
+| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 30% | 2026-08-07 | — |
 | 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Pending | 0% | — | — |
 | 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Pending | 0% | — | — |
 | 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
@@ -33,7 +33,9 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | 15. [Deployment](docs/IMPLEMENTATION_ORDER.md#15-deployment) | Pending | 0% | — | — |
 | 16. [Production Launch](docs/IMPLEMENTATION_ORDER.md#16-production-launch) | Pending | 0% | — | — |
 
-**Phase 1 overall progress: 0 of 16 modules complete (0%).**
+**Phase 1 overall progress: 0 of 16 modules complete (0%); 2 in progress.**
+
+Module 1 (Infrastructure): backend Laravel scaffold + local Docker dev environment are done and validated; Flutter mobile scaffold, CI/CD pipeline, and staging deployment remain, per its [Definition of Done](docs/IMPLEMENTATION_ORDER.md#1-infrastructure). Module 2 (Authentication): register/login/logout are merged and hardened (rate limiting, CORS, fail-closed authorization, JWT issuer/leeway validation); refresh-token rotation is in progress, with OAuth, email verification, password reset, and session list/revoke still remaining.
 
 ## Phase 2 — AI Personal Coach
 

@@ -2,7 +2,7 @@
 
 **Open this document first in every new session** (after skimming [PROJECT_STATUS.md](PROJECT_STATUS.md) if you need the fuller v1.0-freeze context). This is the **operational dashboard** — a live tracker layered on top of the frozen v1.0 planning documents in [`docs/`](docs/) and the execution framework introduced alongside this freeze, not a replacement for any of them. When in doubt about *what's true right now* (current phase, current sprint, current module, what's done), trust this document; when you need *why* or *how*, follow the links out to the relevant spec.
 
-**Last updated:** 2026-08-06 · **Updated by:** Transition from documentation to implementation-ready execution framework
+**Last updated:** 2026-08-10 · **Updated by:** Authentication Foundation merge and milestone finalization
 
 ---
 
@@ -44,20 +44,20 @@ Full rationale: [Phased Release Strategy](docs/PHASED_RELEASE_STRATEGY.md). The 
 | Aspect | Status |
 |---|---|
 | Documentation | ✅ Complete — 100+ documents covering architecture, database, API, mobile, backend, AI, testing, CI/CD, deployment, monitoring, security, and phased release planning |
-| Repository / codebase | ⬜ Not started — no Laravel or Flutter project scaffolding exists yet |
-| Phase 1 implementation | ⬜ Not started |
+| Repository / codebase | 🟡 In progress — Laravel backend scaffolded; register/login/logout merged and hardened; no Flutter scaffolding yet |
+| Phase 1 implementation | 🟡 In progress — Sprint 1 (Infrastructure, Authentication) underway |
 | Phase 2 implementation | ⬜ Not started (blocked on Phase 1 launch, per [exit criteria](docs/PHASED_RELEASE_STRATEGY.md#exit-criteria-for-each-phase)) |
 | Production deployment | ⬜ Not started |
 
 ## Current Phase
 
-> **PHASE 1 — Intelligent Fitness Platform** (Sprint 1 ready to begin)
+> **PHASE 1 — Intelligent Fitness Platform** (Sprint 1 in progress)
 
-[Phase 1 · Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) is ready to begin — planning is complete, no code has been written yet. See [Next Recommended Task](#next-recommended-task).
+[Phase 1 · Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) is underway: Infrastructure scaffolding and Authentication Foundation (register/login/logout, hardened) are merged to `main`, tagged `v1.0.0-auth-foundation`. See [Next Recommended Task](#next-recommended-task).
 
 ## Current Module
 
-> **Module 1 — Infrastructure** (per [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORDER.md#1-infrastructure)) — ready to begin.
+> **Module 2 — Authentication** (per [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORDER.md#2-authentication)) — in progress; refresh-token rotation underway.
 
 Modules are the finer-grained build unit within a sprint; see [Module Progress](#module-progress) for the full 16-module list and [TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md) for the hour-scale tasks within the current module.
 
@@ -69,7 +69,7 @@ Update the **Status** column as work progresses. Full detail (objectives, delive
 
 | Sprint | Focus | Status | Notes |
 |---|---|---|---|
-| [Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) | Infrastructure, Authentication & Project Setup | ⬜ Not started | Next up |
+| [Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) | Infrastructure, Authentication & Project Setup | 🟡 In progress | Auth Foundation merged (`v1.0.0-auth-foundation`); refresh-token rotation underway |
 | [Sprint 2](docs/16-development-roadmap.md#phase-1--sprint-2--user-profile--ai-onboarding) | User Profile & AI Onboarding | ⬜ Not started | |
 | [Sprint 3](docs/16-development-roadmap.md#phase-1--sprint-3--workout-engine--exercise-library) | Workout Engine & Exercise Library | ⬜ Not started | Highest offline-sync risk — see [Known Risks](#known-risks) |
 | [Sprint 4](docs/16-development-roadmap.md#phase-1--sprint-4--tracking-progress--habits) | Tracking, Progress & Habits | ⬜ Not started | |
@@ -94,8 +94,8 @@ The 16-module build order from [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORD
 
 | # | Module | Status | Sprint |
 |---|---|---|---|
-| 1 | [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | ⬜ Not started | 1 |
-| 2 | [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | ⬜ Not started | 1 |
+| 1 | [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | 🟡 In progress | 1 |
+| 2 | [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | 🟡 In progress | 1 |
 | 3 | [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | ⬜ Not started | 2 |
 | 4 | [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | ⬜ Not started | 2 |
 | 5 | [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | ⬜ Not started | 4 (scaffold) |
@@ -111,7 +111,7 @@ The 16-module build order from [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORD
 | 15 | [Deployment](docs/IMPLEMENTATION_ORDER.md#15-deployment) | ⬜ Not started | 6–7 |
 | 16 | [Production Launch](docs/IMPLEMENTATION_ORDER.md#16-production-launch) | ⬜ Not started | 7 |
 
-**Completed:** 0 of 16. **Remaining:** all 16 — see [MODULE_DEPENDENCIES.md § Critical Path](docs/MODULE_DEPENDENCIES.md#critical-path) for which of these are schedule-critical.
+**Completed:** 0 of 16 (2 in progress: Infrastructure, Authentication). **Remaining:** 14 not started — see [MODULE_DEPENDENCIES.md § Critical Path](docs/MODULE_DEPENDENCIES.md#critical-path) for which of these are schedule-critical.
 
 ## Feature Completion Checklist
 
@@ -298,6 +298,8 @@ Decisions explicitly **not yet made** by Product/Engineering, tracked so they ar
 ## Next Recommended Task
 
 **See [NEXT_TASK.md](NEXT_TASK.md) for the single current task** — it's kept in sync with this section and is the file to read for "what do I do right this moment." This section gives the broader sprint-level entry point: [Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup).
+
+Backend scaffold and Authentication Foundation (register/login/logout, hardened) are merged to `main` as of `v1.0.0-auth-foundation`. Refresh-token rotation is in progress.
 
 Concrete first steps (from that sprint's suggested Claude prompts):
 1. Scaffold the Laravel backend per [Backend Architecture § 1](docs/07-backend-architecture.md#1-folder-structure) and the Flutter mobile app per [Mobile Architecture § 2](docs/08-mobile-architecture.md#2-folder-organization).
