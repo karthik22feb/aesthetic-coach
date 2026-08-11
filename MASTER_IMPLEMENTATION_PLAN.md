@@ -2,7 +2,7 @@
 
 **Open this document first in every new session** (after skimming [PROJECT_STATUS.md](PROJECT_STATUS.md) if you need the fuller v1.0-freeze context). This is the **operational dashboard** — a live tracker layered on top of the frozen v1.0 planning documents in [`docs/`](docs/) and the execution framework introduced alongside this freeze, not a replacement for any of them. When in doubt about *what's true right now* (current phase, current sprint, current module, what's done), trust this document; when you need *why* or *how*, follow the links out to the relevant spec.
 
-**Last updated:** 2026-08-10 · **Updated by:** Authentication Foundation merge and milestone finalization
+**Last updated:** 2026-08-11 · **Updated by:** Refresh Token Rotation merge and milestone finalization; Session Management underway
 
 ---
 
@@ -53,11 +53,11 @@ Full rationale: [Phased Release Strategy](docs/PHASED_RELEASE_STRATEGY.md). The 
 
 > **PHASE 1 — Intelligent Fitness Platform** (Sprint 1 in progress)
 
-[Phase 1 · Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) is underway: Infrastructure scaffolding and Authentication Foundation (register/login/logout, hardened) are merged to `main`, tagged `v1.0.0-auth-foundation`. See [Next Recommended Task](#next-recommended-task).
+[Phase 1 · Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) is underway: Infrastructure scaffolding, Authentication Foundation (register/login/logout, hardened), and refresh-token rotation are merged to `main`, tagged `v1.0.0-auth-foundation` and `v1.0.0-refresh-rotation`. See [Next Recommended Task](#next-recommended-task).
 
 ## Current Module
 
-> **Module 2 — Authentication** (per [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORDER.md#2-authentication)) — in progress; refresh-token rotation underway.
+> **Module 2 — Authentication** (per [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORDER.md#2-authentication)) — in progress; session/device management underway.
 
 Modules are the finer-grained build unit within a sprint; see [Module Progress](#module-progress) for the full 16-module list and [TASK_BREAKDOWN.md](docs/TASK_BREAKDOWN.md) for the hour-scale tasks within the current module.
 
@@ -69,7 +69,7 @@ Update the **Status** column as work progresses. Full detail (objectives, delive
 
 | Sprint | Focus | Status | Notes |
 |---|---|---|---|
-| [Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) | Infrastructure, Authentication & Project Setup | 🟡 In progress | Auth Foundation merged (`v1.0.0-auth-foundation`); refresh-token rotation underway |
+| [Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) | Infrastructure, Authentication & Project Setup | 🟡 In progress | Auth Foundation + refresh-token rotation merged (`v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`); session management underway |
 | [Sprint 2](docs/16-development-roadmap.md#phase-1--sprint-2--user-profile--ai-onboarding) | User Profile & AI Onboarding | ⬜ Not started | |
 | [Sprint 3](docs/16-development-roadmap.md#phase-1--sprint-3--workout-engine--exercise-library) | Workout Engine & Exercise Library | ⬜ Not started | Highest offline-sync risk — see [Known Risks](#known-risks) |
 | [Sprint 4](docs/16-development-roadmap.md#phase-1--sprint-4--tracking-progress--habits) | Tracking, Progress & Habits | ⬜ Not started | |
@@ -299,7 +299,7 @@ Decisions explicitly **not yet made** by Product/Engineering, tracked so they ar
 
 **See [NEXT_TASK.md](NEXT_TASK.md) for the single current task** — it's kept in sync with this section and is the file to read for "what do I do right this moment." This section gives the broader sprint-level entry point: [Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup).
 
-Backend scaffold and Authentication Foundation (register/login/logout, hardened) are merged to `main` as of `v1.0.0-auth-foundation`. Refresh-token rotation is in progress.
+Backend scaffold, Authentication Foundation (register/login/logout, hardened), and refresh-token rotation (reuse detection, family revocation) are merged to `main` as of `v1.0.0-auth-foundation` and `v1.0.0-refresh-rotation`. Session/device management (`GET/DELETE /auth/sessions`) is in progress.
 
 Concrete first steps (from that sprint's suggested Claude prompts):
 1. Scaffold the Laravel backend per [Backend Architecture § 1](docs/07-backend-architecture.md#1-folder-structure) and the Flutter mobile app per [Mobile Architecture § 2](docs/08-mobile-architecture.md#2-folder-organization).

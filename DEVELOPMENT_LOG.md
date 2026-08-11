@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** Infrastructure and Authentication Foundation (register/login/logout, hardened) are merged to `main`. Next: refresh-token rotation.
+**Phase 1 · Sprint 1 in progress.** Infrastructure, Authentication Foundation (register/login/logout, hardened), and refresh-token rotation are merged to `main`. Next: session/device management.
 
 ---
 
@@ -52,6 +52,40 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-11 — Sprint 1 · Refresh Token Rotation Merge & Session Management
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 11 (Refresh Token Rotation), Task 15 (Session/Device Management)
+**Objective:** Review, security-audit, and merge the refresh-token rotation implementation to `main`; then implement session/device management (`GET/DELETE /auth/sessions`).
+
+**Files Changed:**
+- `backend/app/Modules/Auth/Services/{AuthService,TokenService}.php` — `refresh()`, `revokeFamily()`
+- `backend/app/Modules/Auth/Exceptions/{InvalidRefreshTokenException,SessionRevokedException}.php` — new
+- `backend/app/Modules/Auth/Http/Requests/RefreshRequest.php` — new
+- `backend/tests/Feature/Auth/RefreshTest.php` — new, 14 tests
+- Session management files listed in this session's own deliverables report (see PR)
+
+**Database Changes:**
+- None — the existing `auth_refresh_tokens`/`devices` schema (Database Design section 3.1) already supported both refresh rotation and session management without modification.
+
+**API Changes:**
+- `POST /auth/refresh` (merged this session)
+- `GET /auth/sessions`, `DELETE /auth/sessions/{deviceId}` (implemented this session — see PR for exact behavior)
+
+**Flutter Changes:**
+- None
+
+**Tests Executed:**
+- Pest Feature tests (real MySQL): 50 passing before session management; see this session's own report for the post-session-management count.
+
+**Known Issues:**
+- A **critical transaction bug** was found via manual smoke testing before the formal test suite existed: throwing an exception inside `DB::transaction()` rolls back every write made in that transaction, including the family-revocation `UPDATE` — reuse detection was silently a no-op until the closure was restructured to return a status and throw only after commit. Fixed and verified via both automated tests and live smoke tests pre- and post-merge.
+- `JWT_ISSUER=` (empty-but-set in `.env`) doesn't trigger the `APP_NAME` fallback, since `env()` only falls back on truly-unset keys. Harmless (issuance/validation stay consistent) but still unfixed, flagged again.
+
+**Git Commit:** `d18eadc` — `feat(auth): implement refresh token rotation and session management` (squash-merge of `feature/refresh-token-rotation`)
+
+**Next Task:** OAuth (Google/Apple Sign-In) or email verification + password reset, per [TASK_BREAKDOWN.md § Sprint 1](docs/TASK_BREAKDOWN.md).
 
 ### 2026-08-10 — Sprint 1 · Authentication Foundation & Security Hardening
 

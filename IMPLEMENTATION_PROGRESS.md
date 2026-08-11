@@ -17,7 +17,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | Module | Status | Progress | Started | Completed |
 |---|---|---|---|---|
 | 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | In Progress | 50% | 2026-08-06 | — |
-| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 30% | 2026-08-07 | — |
+| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 45% | 2026-08-07 | — |
 | 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Pending | 0% | — | — |
 | 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Pending | 0% | — | — |
 | 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
@@ -35,7 +35,25 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 
 **Phase 1 overall progress: 0 of 16 modules complete (0%); 2 in progress.**
 
-Module 1 (Infrastructure): backend Laravel scaffold + local Docker dev environment are done and validated; Flutter mobile scaffold, CI/CD pipeline, and staging deployment remain, per its [Definition of Done](docs/IMPLEMENTATION_ORDER.md#1-infrastructure). Module 2 (Authentication): register/login/logout are merged and hardened (rate limiting, CORS, fail-closed authorization, JWT issuer/leeway validation); refresh-token rotation is in progress, with OAuth, email verification, password reset, and session list/revoke still remaining.
+Module 1 (Infrastructure): backend Laravel scaffold + local Docker dev environment are done and validated; Flutter mobile scaffold, CI/CD pipeline, and staging deployment remain, per its [Definition of Done](docs/IMPLEMENTATION_ORDER.md#1-infrastructure).
+
+Module 2 (Authentication) — per [TASK_BREAKDOWN.md § Sprint 1, Tasks 9-16](docs/TASK_BREAKDOWN.md#sprint-1--infrastructure-authentication--project-setup):
+
+- [x] Register (email/password)
+- [x] Login (email/password)
+- [x] Logout
+- [x] Rate limiting (10 req/min per IP on all auth endpoints)
+- [x] CORS (environment-driven allow-list, never a wildcard)
+- [x] JWT validation (signature, expiration, issuer, clock-skew leeway)
+- [x] Fail-closed route authorization
+- [x] Refresh token rotation
+- [x] Refresh token reuse detection
+- [x] Refresh token family revocation
+- [ ] Session/device management (`GET/DELETE /auth/sessions`) — in progress
+- [ ] Google Sign-In
+- [ ] Apple Sign-In
+- [ ] Email verification
+- [ ] Password reset
 
 ## Phase 2 — AI Personal Coach
 

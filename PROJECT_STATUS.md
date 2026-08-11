@@ -26,10 +26,10 @@
 | **Planning** | Complete |
 | **Implementation** | In Progress |
 | **Development Environment** | Linux Server (`/var/www/html/aesthetic-coach` on `10.24.8.219`, Ubuntu 24.04.3 LTS) — migrated 2026-08-06 from local Windows/XAMPP; see [SERVER_SETUP_REPORT.md](SERVER_SETUP_REPORT.md) |
-| **Status** | Authentication Foundation merged (`v1.0.0-auth-foundation`); refresh-token rotation in progress |
+| **Status** | Authentication Foundation + refresh-token rotation merged (`v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`); session management in progress |
 | **Current Sprint** | Sprint 1 ([Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup)) |
 | **Current Module** | Authentication ([Module 2](docs/IMPLEMENTATION_ORDER.md#2-authentication)) |
-| **Next Task** | Refresh Token Rotation & Session Management — see [NEXT_TASK.md](NEXT_TASK.md) |
+| **Next Task** | Session/Device Management (`GET/DELETE /auth/sessions`) — see [NEXT_TASK.md](NEXT_TASK.md) |
 | **Documentation Version** | v1.0 — frozen 2026-08-06, no further planning/documentation expansion unless explicitly requested (see [Documentation Update Policy](#documentation-update-policy)) |
 | **Risk Level** | Low — no implementation risk has been incurred yet; the highest-rated risks ([Known Risks](#known-risks)) are scoped to specific future sprints, not present-tense |
 | **Documentation Health** | Excellent — 123 documents, 0 broken internal links/anchors as of the last validation pass, single-source-of-truth metadata (see [Change Management Process](#change-management-process)) |
@@ -45,7 +45,7 @@ All planning and architecture documentation (PRD through Master Implementation P
 
 **Documentation and architecture phase: complete. Implementation phase: in progress.**
 
-Laravel backend scaffolding and the Authentication Foundation (register/login/logout, security-hardened: rate limiting, CORS allow-list, fail-closed authorization, JWT issuer/leeway validation) are merged to `main` and tagged `v1.0.0-auth-foundation`. Refresh-token rotation is the current work in progress. No Flutter code exists yet. Every future implementation session starts from [CLAUDE_SESSION_TEMPLATE.md](CLAUDE_SESSION_TEMPLATE.md).
+Laravel backend scaffolding, the Authentication Foundation (register/login/logout, security-hardened: rate limiting, CORS allow-list, fail-closed authorization, JWT issuer/leeway validation), and refresh-token rotation (single-use rotation, reuse detection, family revocation, transaction-safe row locking) are merged to `main`, tagged `v1.0.0-auth-foundation` and `v1.0.0-refresh-rotation`. Session/device management is the current work in progress. No Flutter code exists yet. Every future implementation session starts from [CLAUDE_SESSION_TEMPLATE.md](CLAUDE_SESSION_TEMPLATE.md).
 
 ## Current Phase
 
