@@ -17,7 +17,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | Module | Status | Progress | Started | Completed |
 |---|---|---|---|---|
 | 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | In Progress | 50% | 2026-08-06 | — |
-| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 45% | 2026-08-07 | — |
+| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 55% | 2026-08-07 | — |
 | 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Pending | 0% | — | — |
 | 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Pending | 0% | — | — |
 | 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
@@ -49,9 +49,9 @@ Module 2 (Authentication) — per [TASK_BREAKDOWN.md § Sprint 1, Tasks 9-16](do
 - [x] Refresh token rotation
 - [x] Refresh token reuse detection
 - [x] Refresh token family revocation
-- [ ] Session/device management (`GET/DELETE /auth/sessions`) — in progress
-- [ ] Google Sign-In
-- [ ] Apple Sign-In
+- [x] Session/device management (`GET/DELETE /auth/sessions`)
+- [ ] Google Sign-In — in progress
+- [ ] Apple Sign-In — in progress
 - [ ] Email verification
 - [ ] Password reset
 

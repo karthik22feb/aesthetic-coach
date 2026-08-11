@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** Infrastructure, Authentication Foundation (register/login/logout, hardened), and refresh-token rotation are merged to `main`. Next: session/device management.
+**Phase 1 · Sprint 1 in progress.** Infrastructure, Authentication Foundation (register/login/logout, hardened), refresh-token rotation, and session/device management are merged to `main`. Next: OAuth foundation (Google/Apple Sign-In).
 
 ---
 
@@ -52,6 +52,37 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-11 — Sprint 1 · Session Management PR Review & Merge
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 15 (Session/Device Management)
+**Objective:** Independently re-review the previously-implemented `feature/auth-session-management` branch against frozen documentation, run its security review, merge it to `main`, and tag the milestone.
+
+**Files Changed:**
+- `backend/bootstrap/app.php` — added a `NotFoundHttpException` render handler
+- `backend/tests/Feature/Auth/SessionTest.php` — 2 regression tests added (malformed `deviceId` envelope, revoke-after-rotation)
+- Session management source files (`SessionController`, `SessionResource`, `SessionNotFoundException`, `AuthService::listSessions/revokeSession`, `TokenService`/`AuthServiceProvider` `did` claim) — implemented in the prior session, independently re-verified this session, no further changes needed
+
+**Database Changes:**
+- None — the existing `devices`/`auth_refresh_tokens` schema fully supported session management.
+
+**API Changes:**
+- `GET /auth/sessions`, `DELETE /auth/sessions/{deviceId}` (merged to `main` this session)
+
+**Flutter Changes:**
+- None
+
+**Tests Executed:**
+- Pest Feature tests (real MySQL): 67 passing (17 in `SessionTest.php`), Pint clean (70 files), `composer validate --strict` clean, both pre-merge (on the feature branch) and post-merge (on `main`).
+
+**Known Issues:**
+- Independent review found a genuine gap: `DELETE /auth/sessions/{deviceId}` with a non-numeric `deviceId` (e.g. `abc`) fell through Laravel's routing layer as an unmatched route (`whereNumber()` constraint), bypassing every existing `AppException`-based handler and returning Laravel's raw exception JSON — including a full stack trace under `APP_DEBUG=true`. Fixed by adding a `NotFoundHttpException` render handler in `bootstrap/app.php`, mapped to the standard `404 not_found` envelope. This is a general fix (covers any unmatched API route), not session-management-specific, but was only surfaced because this PR was the first to add a constrained route parameter.
+- BR-5 (max 10 concurrent device sessions, oldest auto-revoked) is still not enforced by register/login — flagged again, unchanged from the prior session, out of scope for both this and the OAuth work that follows.
+
+**Git Commit:** `5401b1f` — `feat(auth): implement session/device listing and revocation` (squash-merge of `feature/auth-session-management`)
+
+**Next Task:** OAuth foundation — Google + Apple Sign-In (`POST /auth/oauth/google`, `POST /auth/oauth/apple`), per [TASK_BREAKDOWN.md § Sprint 1, Tasks 12–13](docs/TASK_BREAKDOWN.md).
 
 ### 2026-08-11 — Sprint 1 · Refresh Token Rotation Merge & Session Management
 
