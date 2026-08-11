@@ -12,6 +12,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -64,6 +65,19 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return ApiResponse::error('rate_limited', 'Too many requests. Please try again later.', 429, $details)
                     ->withHeaders($headers);
+            }
+        });
+
+        // A route parameter that fails its constraint (e.g. a non-numeric
+        // {deviceId} against ->whereNumber()) never reaches a controller or
+        // an AppException -- Laravel treats it as "no route matched" and
+        // throws this directly from the router. Without this handler it falls
+        // through to Laravel's default JSON shape (and, with APP_DEBUG=true,
+        // a full stack trace), breaking the documented error envelope for any
+        // client that sends a malformed resource ID.
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return ApiResponse::error('not_found', 'Resource not found.', 404);
             }
         });
     })->create();

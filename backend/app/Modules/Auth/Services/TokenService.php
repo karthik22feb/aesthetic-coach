@@ -21,16 +21,25 @@ use UnexpectedValueException;
  */
 class TokenService
 {
-    public function issueAccessToken(User $user): string
+    /**
+     * $deviceId is embedded as the 'did' claim so an authenticated request
+     * can be traced back to the device it came from (used by
+     * GET /auth/sessions to compute isCurrent -- see
+     * App\Modules\Auth\AuthServiceProvider). Not documented as part of the
+     * external API contract because it isn't one: the claim is internal
+     * token plumbing, never inspected by the client.
+     */
+    public function issueAccessToken(User $user, ?int $deviceId = null): string
     {
         $now = CarbonImmutable::now();
 
-        $payload = [
+        $payload = array_filter([
             'iss' => config('jwt.issuer'),
             'sub' => (string) $user->id,
+            'did' => $deviceId,
             'iat' => $now->timestamp,
             'exp' => $now->addMinutes(config('jwt.access_ttl_minutes'))->timestamp,
-        ];
+        ], fn ($value) => $value !== null);
 
         return JWT::encode($payload, $this->privateKey(), config('jwt.algo'));
     }

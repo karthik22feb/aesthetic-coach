@@ -9,10 +9,12 @@ use App\Modules\Auth\Events\SessionRevoked;
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Exceptions\InvalidCredentialsException;
 use App\Modules\Auth\Exceptions\InvalidRefreshTokenException;
+use App\Modules\Auth\Exceptions\SessionNotFoundException;
 use App\Modules\Auth\Exceptions\SessionRevokedException;
 use App\Modules\Auth\Models\AuthRefreshToken;
 use App\Modules\Auth\Models\Device;
 use App\Modules\Auth\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -125,7 +127,7 @@ class AuthService
 
             return [
                 'status' => 'ok',
-                'accessToken' => $this->tokenService->issueAccessToken($user),
+                'accessToken' => $this->tokenService->issueAccessToken($user, $device->id),
                 'refreshToken' => $rotated['token'],
                 'expiresIn' => $this->tokenService->accessTokenTtlSeconds(),
             ];
@@ -173,6 +175,71 @@ class AuthService
     }
 
     /**
+     * Lists the user's active sessions/devices per FR-106: a device with at
+     * least one refresh token that is neither revoked nor expired. Ordered
+     * most-recently-active first, matching the documented example in
+     * docs/api-examples/auth.md.
+     *
+     * @return Collection<int, Device>
+     */
+    public function listSessions(User $user): Collection
+    {
+        return Device::where('user_id', $user->id)
+            ->whereHas('authRefreshTokens', function ($query) {
+                $query->whereNull('revoked_at')->where('expires_at', '>', now());
+            })
+            ->orderByDesc('last_active_at')
+            ->get();
+    }
+
+    /**
+     * Revokes a specific device's active refresh token(s) per FR-106
+     * ("revoke invalidates that device's refresh token immediately").
+     * Ownership is checked at the query level (never trust the ID alone,
+     * per docs/coding-standards.md) -- a device that exists but belongs to
+     * another user is indistinguishable from one that doesn't exist at all,
+     * both raising SessionNotFoundException (404), never 403, so a caller
+     * can't use this endpoint to enumerate other users' device IDs.
+     *
+     * Idempotent: revoking a device with no active tokens (already revoked,
+     * or never had one) is a silent no-op, consistent with DELETE semantics
+     * and this module's existing logout() idempotency.
+     *
+     * Row-locked inside a transaction, same as refresh()/revokeFamily(): an
+     * unlocked read-then-update here could race a concurrent refresh() on
+     * the same device (that call rotates the token to a new row via its own
+     * lockForUpdate transaction), letting the newly-rotated token silently
+     * survive a revoke that should have killed the whole device session.
+     *
+     * @throws SessionNotFoundException
+     */
+    public function revokeSession(User $user, int $deviceId): void
+    {
+        $device = Device::where('user_id', $user->id)->where('id', $deviceId)->first();
+
+        if ($device === null) {
+            throw new SessionNotFoundException;
+        }
+
+        $tokens = DB::transaction(function () use ($device) {
+            $tokens = AuthRefreshToken::where('device_id', $device->id)
+                ->whereNull('revoked_at')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($tokens as $token) {
+                $this->tokenService->revoke($token);
+            }
+
+            return $tokens;
+        }, 3);
+
+        foreach ($tokens as $token) {
+            SessionRevoked::dispatch($token);
+        }
+    }
+
+    /**
      * Creates the devices row backing this session's refresh token per
      * Database Design section 3.1 -- see the register/login endpoint docs
      * for why platform/deviceName are required inputs.
@@ -196,7 +263,7 @@ class AuthService
 
         return [
             'user' => $user,
-            'accessToken' => $this->tokenService->issueAccessToken($user),
+            'accessToken' => $this->tokenService->issueAccessToken($user, $device->id),
             'refreshToken' => $refresh['token'],
             'expiresIn' => $this->tokenService->accessTokenTtlSeconds(),
         ];

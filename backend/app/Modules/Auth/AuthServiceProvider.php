@@ -34,7 +34,17 @@ class AuthServiceProvider extends ServiceProvider
                 return null;
             }
 
-            return User::find($payload->sub);
+            $user = User::find($payload->sub);
+
+            // A transient, non-persisted attribute (never saved back to the
+            // database) so GET /auth/sessions can compute isCurrent from the
+            // token's 'did' claim without a second lookup -- see
+            // TokenService::issueAccessToken().
+            if ($user !== null) {
+                $user->currentDeviceId = isset($payload->did) ? (int) $payload->did : null;
+            }
+
+            return $user;
         });
 
         // 10 req/min per IP, per docs/05-api-specification.md section 7.

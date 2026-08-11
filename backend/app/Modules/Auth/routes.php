@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Auth\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -10,8 +11,8 @@ use Illuminate\Support\Facades\Route;
 |
 | Registered by AuthServiceProvider (auto-discovered via ModuleServiceProvider,
 | see docs/07-backend-architecture.md, section 1). Register, login, refresh,
-| and logout are implemented -- oauth, sessions, and password reset are
-| deferred, per docs/05-api-specification.md section 3.
+| logout, and session/device management are implemented -- oauth and
+| password reset are deferred, per docs/05-api-specification.md section 3.
 |
 | Fail-closed by default: every route in this group requires a valid access
 | token unless explicitly exempted below, per docs/14-production-hardening.md
@@ -36,4 +37,9 @@ Route::middleware(['auth:api', 'throttle:auth'])->group(function () {
         ->withoutMiddleware('auth:api');
 
     Route::post('auth/logout', [AuthController::class, 'logout']);
+
+    Route::get('auth/sessions', [SessionController::class, 'index']);
+
+    Route::delete('auth/sessions/{deviceId}', [SessionController::class, 'destroy'])
+        ->whereNumber('deviceId');
 });
