@@ -26,10 +26,10 @@
 | **Planning** | Complete |
 | **Implementation** | In Progress |
 | **Development Environment** | Linux Server (`/var/www/html/aesthetic-coach` on `10.24.8.219`, Ubuntu 24.04.3 LTS) — migrated 2026-08-06 from local Windows/XAMPP; see [SERVER_SETUP_REPORT.md](SERVER_SETUP_REPORT.md) |
-| **Status** | Authentication Foundation + refresh-token rotation + session management merged (`v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`); OAuth and email verification/password reset both implemented and pushed, awaiting PR review/merge |
+| **Status** | Backend Authentication module (Sprint 1, Tasks 9–16) **complete** and merged to `main`, tagged `v1.0.0-auth-complete`. Flutter/mobile work has not started. |
 | **Current Sprint** | Sprint 1 ([Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup)) |
-| **Current Module** | Authentication ([Module 2](docs/IMPLEMENTATION_ORDER.md#2-authentication)) |
-| **Next Task** | Review and merge `feature/auth-oauth` and `feature/email-verification-password-reset` — see [NEXT_TASK.md](NEXT_TASK.md) |
+| **Current Module** | Authentication ([Module 2](docs/IMPLEMENTATION_ORDER.md#2-authentication)) — backend complete, Flutter portion (Tasks 17–20) not started |
+| **Next Task** | Flutter: create the project + Riverpod/go_router scaffold (Tasks 5–6), then Login/Signup screens (Task 17) — see [NEXT_TASK.md](NEXT_TASK.md) |
 | **Documentation Version** | v1.0 — frozen 2026-08-06, no further planning/documentation expansion unless explicitly requested (see [Documentation Update Policy](#documentation-update-policy)) |
 | **Risk Level** | Low — no implementation risk has been incurred yet; the highest-rated risks ([Known Risks](#known-risks)) are scoped to specific future sprints, not present-tense |
 | **Documentation Health** | Excellent — 123 documents, 0 broken internal links/anchors as of the last validation pass, single-source-of-truth metadata (see [Change Management Process](#change-management-process)) |
@@ -45,7 +45,7 @@ All planning and architecture documentation (PRD through Master Implementation P
 
 **Documentation and architecture phase: complete. Implementation phase: in progress.**
 
-Laravel backend scaffolding, the Authentication Foundation (register/login/logout, security-hardened: rate limiting, CORS allow-list, fail-closed authorization, JWT issuer/leeway validation), refresh-token rotation (single-use rotation, reuse detection, family revocation, transaction-safe row locking), and session/device management (`GET/DELETE /auth/sessions`) are merged to `main`, tagged `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, and `v1.0.0-session-management`. The OAuth foundation (Google + Apple Sign-In, `feature/auth-oauth`) and email verification + password reset (`feature/email-verification-password-reset`) are both implemented, tested, and pushed, awaiting PR review/merge. No Flutter code exists yet. Every future implementation session starts from [CLAUDE_SESSION_TEMPLATE.md](CLAUDE_SESSION_TEMPLATE.md).
+Laravel backend scaffolding and the complete Authentication module are merged to `main`: register/login/logout (security-hardened: rate limiting, CORS allow-list, fail-closed authorization, JWT issuer/leeway validation), refresh-token rotation (single-use rotation, reuse detection, family revocation, transaction-safe row locking), session/device management (`GET/DELETE /auth/sessions`), Google + Apple Sign-In (server-side ID token verification against provider JWKS), and email verification + password reset (queued email delivery, single-use hashed tokens, anti-enumeration, full-session revocation on reset). Tagged `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, and `v1.0.0-auth-complete`. 130/130 Pest tests passing. No Flutter code exists yet — per [IMPLEMENTATION_ORDER.md § 2](docs/IMPLEMENTATION_ORDER.md#2-authentication), the Authentication module's own Definition of Done isn't met until the Flutter login/signup screens and staging E2E test also land, so Module 2 remains tracked as in-progress despite the backend being finished. Every future implementation session starts from [CLAUDE_SESSION_TEMPLATE.md](CLAUDE_SESSION_TEMPLATE.md).
 
 ## Current Phase
 

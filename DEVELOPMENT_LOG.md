@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** Infrastructure, Authentication Foundation (register/login/logout, hardened), refresh-token rotation, and session/device management are merged to `main`. OAuth foundation and email verification/password reset are both implemented and pushed, awaiting review/merge. Next: review and merge both PRs, then Flutter Login/Signup screens.
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. No Flutter code exists yet. Next: Flutter project scaffold + Riverpod/go_router (Tasks 5–6), then Login/Signup screens (Task 17).
 
 ---
 
@@ -52,6 +52,37 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-13 — Sprint 1 · Authentication Milestone Finalization (OAuth + Email Verification/Password Reset merge)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Tasks 9–16 (completes the full backend Authentication scope)
+**Objective:** Independently review, merge, and finalize the two pending authentication PRs (`feature/auth-oauth`, `feature/email-verification-password-reset`), verify the merged result end to end, and tag the completed backend Authentication milestone.
+
+**Files Changed:**
+- No new application code this session — both branches were independently re-reviewed (diff inspection, fresh test runs, secret/logging greps, live re-reads of the security-critical OAuth verifier and account-linking code) and merged as-is; no defects were found requiring a fix.
+- Conflict resolution touched `ENGINEERING_DECISION_LOG.md`, `AuthServiceProvider.php`, `AuthController.php`, `AuthService.php`, `routes.php` — in every case the conflicts were import-ordering or doc-comment prose only; every method/route/listener from both branches was already present and non-duplicated after Git's automatic merge, confirmed by manual inspection of each resolved file before staging.
+
+**Database Changes:**
+- None new this session. Post-merge, all 8 auth-related migrations verified present and in correct order (`users`, `cache`, `jobs`, `devices`, `auth_refresh_tokens`, `oauth_identities`, `password_reset_tokens` [corrected shape], `email_verification_tokens`). Schema dump confirmed every FK, unique index, and nullable/non-nullable field matches the frozen Database Design spec (except `email_verification_tokens`, which has none — see the 2026-08-13 Task 14 entry). `migrate → rollback --step=3 → migrate` verified clean on the merged `main`.
+
+**API Changes:**
+- None new this session — merges `POST /auth/oauth/google`, `POST /auth/oauth/apple` (from `feature/auth-oauth`) and `POST /auth/password/forgot`, `POST /auth/password/reset`, `POST /auth/email/verify`, `POST /auth/email/resend` (from `feature/email-verification-password-reset`) into `main` alongside the already-merged register/login/logout/refresh/sessions endpoints. 12 auth endpoints total, confirmed via `route:list`.
+
+**Flutter Changes:**
+- None. Confirmed the `mobile/` directory is still empty — Flutter work has not started.
+
+**Tests Executed:**
+- Pest Feature tests (real MySQL): **130 passed, 472 assertions** on the merged `main` (67 shared baseline + 28 OAuth + 35 email/password — reconciled arithmetically against both branches' independently-reported counts, no unexplained loss). Pint: 102 files, clean. `composer validate --strict`: clean.
+- Full live smoke test against the running app + real Mailhog + real Redis queue: register → verification email delivered and consumed (`emailVerified` flips true) → login → protected endpoint → refresh → logout → refresh-after-logout rejected (`session_revoked`); forgot-password → reset email delivered and consumed → old password rejected, new password accepted → confirmed a completely untouched session from *before* the reset was also revoked (cross-device revocation, not just the current one); login from two devices → list sessions (both visible, `isCurrent` correct) → revoke one → its refresh token rejected; OAuth endpoints confirmed fail-closed against bogus tokens (no real Google/Apple credentials available, so the 28 already-passing Pest tests — including 9 against real RSA cryptography with a locally generated keypair standing in for the provider — are the primary correctness evidence per this session's own "established test/mocked-provider strategy" instruction); rate limiting live-confirmed (10 requests succeed, 11th returns `429 rate_limited` with the standard envelope).
+
+**Known Issues:**
+- Unchanged from prior sessions: BR-5 (max 10 concurrent device sessions) still unenforced by register/login/oauth. FR-104's API contract remains undocumented in the frozen docs (implementation shipped per explicit user approval — see the 2026-08-13 Task 14 `ENGINEERING_DECISION_LOG.md` entry; reconcile if the docs are ever updated).
+- Module 2 (Authentication) is **not** fully "Complete" in `IMPLEMENTATION_PROGRESS.md`/`MASTER_IMPLEMENTATION_PLAN.md` module-tracker sense despite the backend being finished — `IMPLEMENTATION_ORDER.md` § 2's own Definition of Done requires the Flutter login/signup screens and a staging E2E test too (Tasks 17–20). Flagged explicitly rather than prematurely marking the module row Complete.
+
+**Git Commit:** `1daa0b1` (OAuth squash-merge), `0bdf52f` (email verification/password reset squash-merge), both on `main`
+
+**Next Task:** Flutter: create the project + Riverpod/go_router scaffold (Sprint 1, Tasks 5–6), then Login/Signup screens (Task 17). No Flutter/Phase 2 work was started this session, per explicit instruction.
 
 ### 2026-08-13 — Sprint 1 · Email Verification & Password Reset (Task 14)
 

@@ -17,7 +17,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | Module | Status | Progress | Started | Completed |
 |---|---|---|---|---|
 | 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | In Progress | 50% | 2026-08-06 | — |
-| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 55% | 2026-08-07 | — |
+| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 75% | 2026-08-07 | — |
 | 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Pending | 0% | — | — |
 | 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Pending | 0% | — | — |
 | 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
@@ -37,7 +37,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 
 Module 1 (Infrastructure): backend Laravel scaffold + local Docker dev environment are done and validated; Flutter mobile scaffold, CI/CD pipeline, and staging deployment remain, per its [Definition of Done](docs/IMPLEMENTATION_ORDER.md#1-infrastructure).
 
-Module 2 (Authentication) — per [TASK_BREAKDOWN.md § Sprint 1, Tasks 9-16](docs/TASK_BREAKDOWN.md#sprint-1--infrastructure-authentication--project-setup):
+Module 2 (Authentication) — backend scope ([TASK_BREAKDOWN.md § Sprint 1, Tasks 9-16](docs/TASK_BREAKDOWN.md#sprint-1--infrastructure-authentication--project-setup)) is **fully complete and merged to `main`**, tagged `v1.0.0-auth-complete`. Per [IMPLEMENTATION_ORDER.md § 2](docs/IMPLEMENTATION_ORDER.md#2-authentication), this module's own Definition of Done and Outputs also require the Flutter login/signup screens, secure token storage, and a real-device-against-staging exit criterion (Tasks 17–20) — none of which exist yet (no Flutter code exists in the repo at all) — so the module row above stays **In Progress**, not Complete, until those land too.
 
 - [x] Register (email/password)
 - [x] Login (email/password)
@@ -50,10 +50,14 @@ Module 2 (Authentication) — per [TASK_BREAKDOWN.md § Sprint 1, Tasks 9-16](do
 - [x] Refresh token reuse detection
 - [x] Refresh token family revocation
 - [x] Session/device management (`GET/DELETE /auth/sessions`)
-- [ ] Google Sign-In — implemented, pending PR review/merge (`feature/auth-oauth`)
-- [ ] Apple Sign-In — implemented, pending PR review/merge (`feature/auth-oauth`)
-- [ ] Email verification — implemented, pending PR review/merge (`feature/email-verification-password-reset`)
-- [ ] Password reset — implemented, pending PR review/merge (`feature/email-verification-password-reset`)
+- [x] Google Sign-In
+- [x] Apple Sign-In
+- [x] Email verification
+- [x] Password reset
+- [ ] Flutter: Login + Signup screens (Task 17) — not started
+- [ ] Flutter: Dio `AuthInterceptor`, transparent refresh (Task 18) — not started
+- [ ] Flutter: secure token storage (Task 19) — not started
+- [ ] End-to-end staging integration test (Task 20) — not started
 
 ## Phase 2 — AI Personal Coach
 

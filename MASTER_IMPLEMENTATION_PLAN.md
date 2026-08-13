@@ -2,7 +2,7 @@
 
 **Open this document first in every new session** (after skimming [PROJECT_STATUS.md](PROJECT_STATUS.md) if you need the fuller v1.0-freeze context). This is the **operational dashboard** — a live tracker layered on top of the frozen v1.0 planning documents in [`docs/`](docs/) and the execution framework introduced alongside this freeze, not a replacement for any of them. When in doubt about *what's true right now* (current phase, current sprint, current module, what's done), trust this document; when you need *why* or *how*, follow the links out to the relevant spec.
 
-**Last updated:** 2026-08-13 · **Updated by:** Email verification + password reset (Task 14) implemented, tested, pushed — awaiting review/merge alongside the still-pending OAuth PR
+**Last updated:** 2026-08-13 · **Updated by:** Authentication milestone finalization — OAuth and email verification/password reset PRs independently reviewed, rebase-conflicts resolved, both squash-merged to `main`; backend Authentication module (Sprint 1, Tasks 9–16) complete, tagged `v1.0.0-auth-complete`
 
 ---
 
@@ -53,7 +53,7 @@ Full rationale: [Phased Release Strategy](docs/PHASED_RELEASE_STRATEGY.md). The 
 
 > **PHASE 1 — Intelligent Fitness Platform** (Sprint 1 in progress)
 
-[Phase 1 · Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) is underway: Infrastructure scaffolding, Authentication Foundation (register/login/logout, hardened), refresh-token rotation, and session/device management are merged to `main`, tagged `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, and `v1.0.0-session-management`. See [Next Recommended Task](#next-recommended-task).
+[Phase 1 · Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) is underway: Infrastructure scaffolding is in progress, and the entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, and `v1.0.0-auth-complete`. Flutter/mobile work (Tasks 5–8, 17–20) has not started. See [Next Recommended Task](#next-recommended-task).
 
 ## Current Module
 
@@ -69,7 +69,7 @@ Update the **Status** column as work progresses. Full detail (objectives, delive
 
 | Sprint | Focus | Status | Notes |
 |---|---|---|---|
-| [Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) | Infrastructure, Authentication & Project Setup | 🟡 In progress | Auth Foundation + refresh-token rotation + session management merged (`v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`); OAuth and email verification/password reset both implemented and pushed, awaiting review/merge |
+| [Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) | Infrastructure, Authentication & Project Setup | 🟡 In progress | Backend Authentication complete and merged (`v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, `v1.0.0-auth-complete` — Tasks 9–16). Flutter (Tasks 5–8, 17–20) not started. |
 | [Sprint 2](docs/16-development-roadmap.md#phase-1--sprint-2--user-profile--ai-onboarding) | User Profile & AI Onboarding | ⬜ Not started | |
 | [Sprint 3](docs/16-development-roadmap.md#phase-1--sprint-3--workout-engine--exercise-library) | Workout Engine & Exercise Library | ⬜ Not started | Highest offline-sync risk — see [Known Risks](#known-risks) |
 | [Sprint 4](docs/16-development-roadmap.md#phase-1--sprint-4--tracking-progress--habits) | Tracking, Progress & Habits | ⬜ Not started | |
@@ -299,7 +299,7 @@ Decisions explicitly **not yet made** by Product/Engineering, tracked so they ar
 
 **See [NEXT_TASK.md](NEXT_TASK.md) for the single current task** — it's kept in sync with this section and is the file to read for "what do I do right this moment." This section gives the broader sprint-level entry point: [Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup).
 
-Backend scaffold, Authentication Foundation (register/login/logout, hardened), refresh-token rotation (reuse detection, family revocation), and session/device management (`GET/DELETE /auth/sessions`) are merged to `main` as of `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, and `v1.0.0-session-management`. OAuth foundation (`feature/auth-oauth`) and email verification + password reset (`feature/email-verification-password-reset`) are both fully implemented, tested, and pushed — neither is merged yet. Reviewing and merging both is the next task.
+The entire backend Authentication module is merged to `main` as of `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, and `v1.0.0-auth-complete`: register/login/logout, refresh-token rotation (reuse detection, family revocation), session/device management, Google/Apple Sign-In, email verification, and password reset. No Flutter code exists yet. The next task is Flutter: create the project + Riverpod/go_router scaffold (Tasks 5–6), then Login/Signup screens (Task 17) — see [NEXT_TASK.md](NEXT_TASK.md).
 
 Concrete first steps (from that sprint's suggested Claude prompts):
 1. Scaffold the Laravel backend per [Backend Architecture § 1](docs/07-backend-architecture.md#1-folder-structure) and the Flutter mobile app per [Mobile Architecture § 2](docs/08-mobile-architecture.md#2-folder-organization).
