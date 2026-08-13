@@ -27,3 +27,6 @@ abstract final class AppTheme {
     ),
   );
 }
+
+// TEMPORARY deliberate formatting violation for CI negative-test verification.
+final     badlyFormatted   =    1;
