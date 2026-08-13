@@ -14,12 +14,7 @@ on:
       - "mobile/**"
       - ".github/workflows/mobile-ci.yml"
   push:
-    # TEMPORARY, for this session's CI verification only (no gh/API access
-    # available to open a real PR against main) -- narrowed back to
-    # `branches: [main]` before the final commit, matching
-    # docs/11-cicd-pipeline.md section 3.2 ("Both pipelines run on every PR
-    # against main").
-    branches: [main, "feature/flutter-foundation"]
+    branches: [main]
     paths:
       - "mobile/**"
       - ".github/workflows/mobile-ci.yml"
