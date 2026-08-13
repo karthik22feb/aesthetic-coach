@@ -10,16 +10,17 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Registered by AuthServiceProvider (auto-discovered via ModuleServiceProvider,
-| see docs/07-backend-architecture.md, section 1). Register, login, refresh,
-| logout, and session/device management are implemented -- oauth and
-| password reset are deferred, per docs/05-api-specification.md section 3.
+| see docs/07-backend-architecture.md, section 1). Register, login, oauth,
+| refresh, logout, and session/device management are implemented -- email
+| verification and password reset are deferred, per
+| docs/05-api-specification.md section 3.
 |
 | Fail-closed by default: every route in this group requires a valid access
 | token unless explicitly exempted below, per docs/14-production-hardening.md
 | section 5 ("a forgotten annotation fails closed, not open"). Register,
-| login, and refresh are public (the refresh token itself is the credential
-| for /auth/refresh, not an access token) -- everything else defaults to
-| protected.
+| login, oauth, and refresh are public (each is itself a way to establish a
+| session, so none can require one already exists) -- everything else
+| defaults to protected.
 |
 | All routes carry the 'auth' rate limiter (10 req/min per IP), per
 | docs/05-api-specification.md section 7.
@@ -31,6 +32,12 @@ Route::middleware(['auth:api', 'throttle:auth'])->group(function () {
         ->withoutMiddleware('auth:api');
 
     Route::post('auth/login', [AuthController::class, 'login'])
+        ->withoutMiddleware('auth:api');
+
+    Route::post('auth/oauth/google', [AuthController::class, 'oauthGoogle'])
+        ->withoutMiddleware('auth:api');
+
+    Route::post('auth/oauth/apple', [AuthController::class, 'oauthApple'])
         ->withoutMiddleware('auth:api');
 
     Route::post('auth/refresh', [AuthController::class, 'refresh'])

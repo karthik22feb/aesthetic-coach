@@ -4,24 +4,32 @@ namespace App\Modules\Auth\Services;
 
 use App\Modules\Auth\Dtos\LoginDto;
 use App\Modules\Auth\Dtos\RegisterDto;
+use App\Modules\Auth\Enums\OAuthProvider;
 use App\Modules\Auth\Enums\Platform;
 use App\Modules\Auth\Events\SessionRevoked;
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Exceptions\InvalidCredentialsException;
+use App\Modules\Auth\Exceptions\InvalidOAuthTokenException;
 use App\Modules\Auth\Exceptions\InvalidRefreshTokenException;
+use App\Modules\Auth\Exceptions\OAuthEmailConflictException;
 use App\Modules\Auth\Exceptions\SessionNotFoundException;
 use App\Modules\Auth\Exceptions\SessionRevokedException;
 use App\Modules\Auth\Models\AuthRefreshToken;
 use App\Modules\Auth\Models\Device;
+use App\Modules\Auth\Models\OAuthIdentity;
 use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Support\OAuthClaims;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthService
 {
     public function __construct(
         protected TokenService $tokenService,
+        protected OAuthVerifierFactory $oauthVerifiers,
     ) {}
 
     /**
@@ -172,6 +180,105 @@ class AuthService
         $this->tokenService->revoke($token);
 
         SessionRevoked::dispatch($token);
+    }
+
+    /**
+     * Verifies a provider ID token server-side, resolves (or creates) the
+     * corresponding user, and issues a normal session -- the same shape as
+     * register()/login() (API Specification section 3: "Response shape
+     * identical to register"). Never trusts any client-asserted identity;
+     * every field used below comes from OAuthClaims, which only exists
+     * after OAuthTokenVerifier has independently verified signature,
+     * issuer, audience, and expiration.
+     *
+     * @return array{user: User, accessToken: string, refreshToken: string, expiresIn: int, created: bool}
+     *
+     * @throws InvalidOAuthTokenException
+     * @throws OAuthEmailConflictException
+     */
+    public function oauthLogin(OAuthProvider $provider, string $idToken, Platform $platform, ?string $deviceName): array
+    {
+        $claims = $this->oauthVerifiers->for($provider)->verify($idToken);
+
+        [$user, $created] = $this->resolveOAuthUser($provider, $claims);
+
+        $device = $this->registerDevice($user, $platform, $deviceName);
+
+        return [...$this->issueSession($user, $device), 'created' => $created];
+    }
+
+    /**
+     * @return array{0: User, 1: bool} the resolved user and whether it was
+     *                                 newly created by this call
+     *
+     * @throws OAuthEmailConflictException
+     */
+    protected function resolveOAuthUser(OAuthProvider $provider, OAuthClaims $claims): array
+    {
+        $identity = OAuthIdentity::where('provider', $provider)
+            ->where('provider_user_id', $claims->providerUserId)
+            ->first();
+
+        if ($identity !== null) {
+            return [$identity->user, false];
+        }
+
+        try {
+            return DB::transaction(function () use ($provider, $claims) {
+                // Per docs/features/authentication.md Edge Cases: a user who
+                // signed up with email/password and later signs in via
+                // Google/Apple using the same email is linked, not
+                // duplicated (users.email is UNIQUE, so duplication is
+                // impossible regardless) -- but only when the provider
+                // itself asserts the email is verified. An unverified claim
+                // is refused rather than linked, so control of an
+                // unverified mailbox at the provider can't be used to take
+                // over an existing password-based account.
+                $user = User::where('email', $claims->email)->first();
+
+                if ($user !== null) {
+                    if (! $claims->emailVerified) {
+                        throw new OAuthEmailConflictException;
+                    }
+                } else {
+                    $user = User::create([
+                        'name' => $claims->name ?? Str::before($claims->email, '@'),
+                        'email' => $claims->email,
+                        'password_hash' => null,
+                    ]);
+
+                    // email_verified_at is never client-settable (not in
+                    // User's #[Fillable(...)] list) -- set directly here
+                    // only because the provider, not the client, verified it.
+                    if ($claims->emailVerified) {
+                        $user->forceFill(['email_verified_at' => now()])->save();
+                    }
+                }
+
+                OAuthIdentity::create([
+                    'user_id' => $user->id,
+                    'provider' => $provider,
+                    'provider_user_id' => $claims->providerUserId,
+                ]);
+
+                return [$user, $user->wasRecentlyCreated];
+            });
+        } catch (QueryException $e) {
+            if ((int) ($e->errorInfo[1] ?? 0) !== 1062) {
+                throw $e;
+            }
+
+            // Lost a race to a concurrent sign-in for the same provider
+            // identity (UNIQUE(provider, provider_user_id) in the
+            // oauth_identities migration) -- the other request already
+            // created it between our lookup above and this transaction.
+            // Resolve normally instead of surfacing a raw 500.
+            $identity = OAuthIdentity::where('provider', $provider)
+                ->where('provider_user_id', $claims->providerUserId)
+                ->firstOrFail();
+
+            return [$identity->user, false];
+        }
     }
 
     /**

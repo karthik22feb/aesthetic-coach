@@ -48,6 +48,14 @@ class User extends Authenticatable
     }
 
     /**
+     * @return HasMany<OAuthIdentity>
+     */
+    public function oauthIdentities(): HasMany
+    {
+        return $this->hasMany(OAuthIdentity::class);
+    }
+
+    /**
      * Laravel's Authenticatable base expects a 'password' getter for
      * framework-level password checks; the documented column is
      * 'password_hash' (Database Design section 3.1), so this bridges the two.

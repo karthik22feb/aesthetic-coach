@@ -3,8 +3,10 @@
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Auth\Enums\OAuthProvider;
 use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\LogoutRequest;
+use App\Modules\Auth\Http\Requests\OAuthLoginRequest;
 use App\Modules\Auth\Http\Requests\RefreshRequest;
 use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Resources\UserResource;
@@ -30,6 +32,31 @@ class AuthController extends Controller
         $session = $this->authService->login($request->toDto());
 
         return $this->sessionResponse($session, 200);
+    }
+
+    public function oauthGoogle(OAuthLoginRequest $request): JsonResponse
+    {
+        return $this->oauthLogin(OAuthProvider::Google, $request);
+    }
+
+    public function oauthApple(OAuthLoginRequest $request): JsonResponse
+    {
+        return $this->oauthLogin(OAuthProvider::Apple, $request);
+    }
+
+    protected function oauthLogin(OAuthProvider $provider, OAuthLoginRequest $request): JsonResponse
+    {
+        $session = $this->authService->oauthLogin(
+            $provider,
+            $request->string('idToken')->toString(),
+            $request->platform(),
+            $request->deviceName(),
+        );
+
+        // 201 only when this call actually created the account (mirrors
+        // register()'s 201 vs login()'s 200) -- an existing user signing in
+        // via an already-linked or newly-linked provider identity gets 200.
+        return $this->sessionResponse($session, $session['created'] ? 201 : 200);
     }
 
     public function refresh(RefreshRequest $request): JsonResponse

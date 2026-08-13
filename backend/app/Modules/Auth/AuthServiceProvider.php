@@ -2,7 +2,9 @@
 
 namespace App\Modules\Auth;
 
+use App\Modules\Auth\Contracts\JwksProvider;
 use App\Modules\Auth\Models\User;
+use App\Modules\Auth\Services\HttpJwksProvider;
 use App\Modules\Auth\Services\TokenService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -19,6 +21,15 @@ use Throwable;
  */
 class AuthServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        // Bound as a singleton so a single request only ever holds one
+        // in-memory reference; the actual JWKS caching is handled by
+        // HttpJwksProvider itself via the application cache store (Redis),
+        // not by this container scope.
+        $this->app->singleton(JwksProvider::class, HttpJwksProvider::class);
+    }
+
     public function boot(): void
     {
         Auth::viaRequest('jwt', function (Request $request) {

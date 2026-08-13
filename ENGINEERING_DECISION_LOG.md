@@ -50,6 +50,79 @@ Copy this template for every new entry:
 
 ## Entries
 
+### 2026-08-12 — OAuth email-collision handling: link only on a provider-verified email, else refuse
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 12/13 (Google/Apple Sign-In)
+**Decision Summary:** When a Google/Apple ID token's email matches an existing user's email, the accounts are linked (a new `oauth_identities` row is created for the existing user) only if the provider's token asserts `email_verified: true`. If the provider does not assert verification, the sign-in is refused with `409 conflict` rather than linked or silently duplicated.
+
+**Background:**
+`docs/features/authentication.md` Edge Cases documents: "User signs up with email, later attempts Google Sign-In using the same email → account is linked (matched by verified email) rather than creating a duplicate." The qualifier "verified" is doing real work here: `users.email` is `UNIQUE` (Database Design section 3.1), so a colliding email can never produce a genuine duplicate row regardless — the only question is whether to silently attach the new provider identity to the existing account. The frozen docs don't say what to do when the provider's own claim doesn't assert verification, so this required a judgment call rather than a literal restatement of the doc.
+
+**Alternatives Considered:**
+- Link on any email match, verified or not — rejected: would let anyone who can get *any* OAuth provider to issue them a token claiming a victim's email address (some providers allow unverified email claims, or an attacker-controlled provider account with a self-asserted, never-confirmed address) attach their provider identity to the victim's existing password-protected account, then sign in as that user going forward. This is a real account-takeover path, not a hypothetical.
+- Refuse the sign-in entirely with no path forward — considered, but a flat refusal without explanation is worse UX than a specific, actionable `409 conflict` and doesn't change the security posture either way.
+- Link only when the provider's token asserts `email_verified: true` (chosen) — the literal reading of the documented qualifier; the provider itself vouching for the email is exactly the kind of independent verification the rest of this module already leans on (Security Architecture: "never trusting client-asserted identity").
+
+**Final Decision:**
+`AuthService::resolveOAuthUser()` checks `$claims->emailVerified` before linking; if false and an existing user's email matches, throws `OAuthEmailConflictException` (409, `conflict`) instead of proceeding.
+
+**Reasoning:**
+This is the narrowest reading of "matched by verified email" that's still consistent with the schema's `UNIQUE` constraint (duplication was never on the table) and with the module's existing trust model (provider verification, not client assertion, is what's trusted). It fails closed on the ambiguous case rather than guessing toward the more permissive, more exploitable behavior.
+
+**Impact:**
+Affects both `POST /auth/oauth/google` and `POST /auth/oauth/apple` identically (shared logic in `AbstractOAuthIdTokenVerifier`/`AuthService::resolveOAuthUser`). A user who registered with email/password and wants to add Google/Apple sign-in on an account where the provider can't/won't assert email verification has no linking path yet — not a blocker for this session's scope (no such flow is documented), but worth knowing if a future "link a provider to my existing account" self-service feature is ever specified.
+
+**Related Files:**
+- `backend/app/Modules/Auth/Services/AuthService.php`
+- `backend/app/Modules/Auth/Exceptions/OAuthEmailConflictException.php`
+- `backend/tests/Feature/Auth/OAuthGoogleTest.php`, `OAuthAppleTest.php`
+
+**Related Documentation:**
+- [Authentication feature § Edge Cases](docs/features/authentication.md#edge-cases)
+- [Database Design § 3.1](docs/04-database-design.md#31-identity--auth)
+
+**Git Commit:** `<pending — see this session's Suggested Git Commit>`
+
+**Author:** Claude (AI Software Engineer), Sprint 1 Session 5 — Session Management PR Review, Merge & OAuth Foundation
+
+### 2026-08-12 — Reuse firebase/php-jwt for Google/Apple ID token verification (no new dependency)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 12/13 (Google/Apple Sign-In)
+**Decision Summary:** Server-side verification of Google/Apple ID tokens (signature against the provider's JWKS, issuer, audience, expiration) is implemented using `firebase/php-jwt` — already a project dependency for this app's own JWT access tokens — via its `JWK::parseKeySet()` support, rather than adding a dedicated OAuth/provider SDK.
+
+**Background:**
+System Architecture section 8 requires Google/Apple sign-in to be "verified server-side via provider public keys/tokeninfo endpoints, never trusting client-asserted identity," but doesn't name a library. Both providers' ID tokens are standard signed JWTs (RS256) verifiable against a published JWKS endpoint — this is a generic JWT+JWKS verification problem, not something inherently requiring a provider-specific SDK.
+
+**Alternatives Considered:**
+- `google/apiclient` (official Google API PHP client) — rejected: a large, general-purpose SDK for calling the entire Google API surface; using it only for ID token verification pulls in far more than needed for a single JWT-verification concern, mirroring the same "don't reinvent, but don't over-adopt" reasoning already applied to the JWT library choice in the Authentication Foundation session.
+- A dedicated Apple Sign-In package — rejected: no comparably standard, widely-adopted one exists for Laravel/PHP the way `firebase/php-jwt` is already the de facto choice for JWT itself; Apple's ID token is a standard JWT, no Apple-specific parsing logic is actually required.
+- Google/Apple's tokeninfo HTTP endpoints (send the raw token, provider verifies and echoes back claims) — rejected: an extra network round-trip on every single sign-in (vs. a locally cached JWKS), and functionally equivalent to what local JWKS verification already provides once the key set is cached.
+- `firebase/php-jwt`'s existing `JWK::parseKeySet()` (chosen) — the library is already a dependency, already trusted (it verifies this app's own access tokens), and its JWK support handles exactly this case: decode against a `kid`-keyed set of provider-published public keys.
+
+**Final Decision:**
+`App\Modules\Auth\Services\HttpJwksProvider` fetches and caches each provider's JWKS (Redis, configurable TTL) and hands `JWK::parseKeySet()`'s output to `Firebase\JWT\JWT::decode()`. `AbstractOAuthIdTokenVerifier` (with `GoogleIdTokenVerifier`/`AppleIdTokenVerifier` subclasses) layers issuer/audience checks and claim extraction on top.
+
+**Reasoning:**
+Isolating this behind an `OAuthTokenVerifier` interface (mirroring how `TokenService` already isolates `firebase/php-jwt` for this app's own tokens) means swapping the underlying library later touches only these few classes, not the rest of the auth module — consistent with the precedent set by the original JWT-library decision.
+
+**Impact:**
+No new Composer dependency. Provider signing-key rotation is handled transparently (cached JWKS is re-fetched after TTL expiry, not hardcoded). `config/oauth.php` holds the provider client IDs (public, non-secret) and JWKS URLs; no client secret is required by this flow at all, since ID-token verification is asymmetric-key-based.
+
+**Related Files:**
+- `backend/app/Modules/Auth/Contracts/{JwksProvider,OAuthTokenVerifier}.php`
+- `backend/app/Modules/Auth/Services/{HttpJwksProvider,AbstractOAuthIdTokenVerifier,GoogleIdTokenVerifier,AppleIdTokenVerifier}.php`
+- `backend/config/oauth.php`
+
+**Related Documentation:**
+- [System Architecture § 8 Security Architecture](docs/03-system-architecture.md#8-security-architecture)
+- [ADR-0005](docs/adr/0005-jwt-refresh-token-auth.md) (precedent for the `firebase/php-jwt` choice)
+
+**Git Commit:** `<pending — see this session's Suggested Git Commit>`
+
+**Author:** Claude (AI Software Engineer), Sprint 1 Session 5 — Session Management PR Review, Merge & OAuth Foundation
+
 ### 2026-08-11 — Map unmatched-route 404s to the standard error envelope
 
 **Sprint:** Phase 1 · Sprint 1
