@@ -50,10 +50,10 @@ Module 2 (Authentication) — per [TASK_BREAKDOWN.md § Sprint 1, Tasks 9-16](do
 - [x] Refresh token reuse detection
 - [x] Refresh token family revocation
 - [x] Session/device management (`GET/DELETE /auth/sessions`)
-- [ ] Google Sign-In — in progress
-- [ ] Apple Sign-In — in progress
-- [ ] Email verification
-- [ ] Password reset
+- [ ] Google Sign-In — implemented, pending PR review/merge (`feature/auth-oauth`)
+- [ ] Apple Sign-In — implemented, pending PR review/merge (`feature/auth-oauth`)
+- [ ] Email verification — implemented, pending PR review/merge (`feature/email-verification-password-reset`)
+- [ ] Password reset — implemented, pending PR review/merge (`feature/email-verification-password-reset`)
 
 ## Phase 2 — AI Personal Coach
 

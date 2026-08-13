@@ -50,6 +50,85 @@ Copy this template for every new entry:
 
 ## Entries
 
+### 2026-08-13 — Email verification (FR-104) API contract: invented, not discovered, with explicit user approval
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 14 (Email verification + password reset endpoints)
+**Decision Summary:** No frozen document defines an email-verification endpoint, request/response shape, token table, or delivery mechanism anywhere. With the user's explicit sign-off, this session mirrors FR-105's (password reset's) fully-specified pattern exactly: `POST /auth/email/verify` (body `{token}`, public) and `POST /auth/email/resend` (authenticated, no body), backed by a new `email_verification_tokens` table shaped identically to `password_reset_tokens`.
+
+**Background:**
+FR-104 ("User can verify email") is a real, required entry in `docs/02-srs.md`'s functional requirements table and `docs/features/authentication.md`'s FR table. But checking every place an endpoint would be documented turned up nothing:
+- `docs/05-api-specification.md` § 3 lists ten endpoints, including both password-reset ones (`POST /auth/password/forgot`, `POST /auth/password/reset`) — no email-verification endpoint.
+- `docs/features/authentication.md` § APIs enumerates the same ten, verbatim.
+- `docs/api-examples/auth.md` has no example for it (though, notably, it also has none for password reset, so this alone wasn't conclusive).
+- `docs/04-database-design.md` § 3.1 specifies `password_reset_tokens` column-by-column (`email` PK, `token_hash` CHAR(64), `expires_at`) but no equivalent table for verification tokens.
+- `docs/08-mobile-architecture.md` has no deep-link or verification-link scheme documented anywhere.
+
+This is a genuine, consistent gap across every document that would define it — not a contradiction between two docs that disagree, and not a minor unspecified detail like an exact token byte-length. It's the complete absence of an API contract for a required feature, which the session's own instructions treat as a stop-and-report condition rather than something to quietly infer. Stopped and asked the user before writing any endpoint code.
+
+**Alternatives Considered:**
+- Silently invent a contract and proceed — rejected outright per this session's explicit instruction not to invent the API; the user needed to be the one to decide, not have a decision made for them.
+- Implement password reset only, defer email verification entirely — offered as an option; not chosen.
+- Ask the user to specify the exact contract themselves — offered as an option; not chosen (they instead approved the recommended default below).
+- Mirror the password-reset pattern exactly (chosen, user-approved) — password reset is the closest fully-specified sibling feature in the same document set, sharing the same shape (single-use, expiring, server-generated token delivered by email, consumed via a token in the request body). Reusing it introduces zero new architectural patterns.
+
+**Final Decision:**
+Built exactly as approved: `POST /auth/email/verify` (public — a user may not hold a fresh access token when clicking/entering the code, since the 60-minute token TTL exceeds the 15-minute access-token TTL) and `POST /auth/email/resend` (authenticated — only a logged-in user would need to re-request their own verification email; no email parameter, so no enumeration surface exists on this endpoint the way it would if it were public and email-keyed like `password/forgot`). Token: `Str::random(64)`, SHA-256-hashed at rest, 60-minute expiry (matching FR-105's documented value for the sibling feature, not independently specified), single-use (deleted on consumption), one live token per email (a new request overwrites any prior unused one).
+
+**Reasoning:**
+Given the user's approval, the goal was to introduce the smallest possible new surface area: no new token-security model, no new table shape, no new response envelope pattern — everything is a direct application of conventions this codebase already uses and has already security-reviewed for the sibling feature.
+
+**Impact:**
+If FR-104's contract is ever formally added to the frozen documentation, this implementation needs to be reconciled against it — flagged explicitly in `NEXT_TASK.md` and `DEVELOPMENT_LOG.md` so it isn't forgotten. `docs/api-examples/auth.md` has no worked example for either password reset or email verification; adding both would be a natural follow-up (documentation-only, not this session's scope).
+
+**Related Files:**
+- `backend/app/Modules/Auth/Models/EmailVerificationToken.php`
+- `backend/app/Modules/Auth/Http/Controllers/AuthController.php` (`verifyEmail`, `resendVerification`)
+- `backend/app/Modules/Auth/routes.php`
+- `backend/database/migrations/2026_08_13_043805_create_email_verification_tokens_table.php`
+
+**Related Documentation:**
+- [SRS § 4.1](docs/02-srs.md#41-authentication--account-management) (FR-104)
+- [API Specification § 3](docs/05-api-specification.md#3-authentication-flow) (documents FR-105's endpoints, silent on FR-104's)
+
+**Git Commit:** `<pending — see this session's own report>`
+
+**Author:** Claude (AI Software Engineer), Sprint 1 Session 6 — Email Verification & Password Reset
+
+### 2026-08-13 — Password reset revokes every session, not just the current one
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 14 (Email verification + password reset endpoints)
+**Decision Summary:** A successful `POST /auth/password/reset` revokes every one of the user's active refresh tokens across all devices/families, not just the session on the device that requested the reset.
+
+**Background:**
+No frozen document states what a password reset should do to existing sessions. The session's own instructions explicitly called this out as a "do not invent behavior" point requiring a documented decision either way.
+
+**Alternatives Considered:**
+- Preserve all existing sessions — rejected: a password reset is frequently triggered *because* the user suspects their account is compromised (or, conversely, an attacker who obtained the old password is the one being locked out by the legitimate user's reset); leaving old sessions alive defeats the point in both cases.
+- Revoke only the family associated with whichever refresh token (if any) accompanies the reset request — not applicable: `POST /auth/password/reset` is unauthenticated by design (a reset token, not a session token, is the credential), so there is no "current session" to distinguish from the others in the first place.
+- Revoke every active session across all devices (chosen) — matches this module's existing security posture: BR-3 already revokes an entire token family the instant reuse (a suspected-compromise signal) is detected. A password reset is at least as strong a signal, and the user can simply log back in on every device afterward — a minor inconvenience against a real security property.
+
+**Final Decision:**
+`AuthService::resetPassword()` row-locks and revokes every unrevoked `auth_refresh_tokens` row for the user (not just one family) inside the same transaction as the password change and token deletion, dispatching `SessionRevoked` for each only after commit — the same transaction-then-dispatch structure already established for `refresh()`/`revokeSession()`.
+
+**Reasoning:**
+Consistency with BR-3's existing "any compromise signal revokes sessions" precedent was preferred over inventing a *weaker* default no document asked for.
+
+**Impact:**
+A user resetting their password from one device is logged out of every device, including the one they used to request the reset — they must log back in afterward. This is standard behavior for this kind of flow industry-wide and is regression-tested (`PasswordResetTest.php`: "resetting the password revokes every active session across all devices").
+
+**Related Files:**
+- `backend/app/Modules/Auth/Services/AuthService.php` (`resetPassword`)
+- `backend/tests/Feature/Auth/PasswordResetTest.php`
+
+**Related Documentation:**
+- [SRS § 6 Business Rules](docs/02-srs.md#6-business-rules) (BR-3)
+
+**Git Commit:** `<pending — see this session's own report>`
+
+**Author:** Claude (AI Software Engineer), Sprint 1 Session 6 — Email Verification & Password Reset
+
 ### 2026-08-12 — OAuth email-collision handling: link only on a provider-verified email, else refuse
 
 **Sprint:** Phase 1 · Sprint 1

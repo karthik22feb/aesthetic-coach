@@ -3,12 +3,15 @@
 namespace App\Modules\Auth;
 
 use App\Modules\Auth\Contracts\JwksProvider;
+use App\Modules\Auth\Events\UserRegistered;
+use App\Modules\Auth\Listeners\SendVerificationEmail;
 use App\Modules\Auth\Models\User;
 use App\Modules\Auth\Services\HttpJwksProvider;
 use App\Modules\Auth\Services\TokenService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -60,6 +63,11 @@ class AuthServiceProvider extends ServiceProvider
 
         // 10 req/min per IP, per docs/05-api-specification.md section 7.
         RateLimiter::for('auth', fn (Request $request) => Limit::perMinute(10)->by($request->ip()));
+
+        // Wires FR-101's acceptance criteria ("account is created and
+        // verification email sent") -- see UserRegistered's docblock and
+        // SendVerificationEmail.
+        Event::listen(UserRegistered::class, SendVerificationEmail::class);
 
         Route::middleware('api')->prefix('api/v1')->group(function () {
             require __DIR__.'/routes.php';

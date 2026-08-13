@@ -11,16 +11,18 @@ use Illuminate\Support\Facades\Route;
 |
 | Registered by AuthServiceProvider (auto-discovered via ModuleServiceProvider,
 | see docs/07-backend-architecture.md, section 1). Register, login, oauth,
-| refresh, logout, and session/device management are implemented -- email
-| verification and password reset are deferred, per
-| docs/05-api-specification.md section 3.
+| refresh, logout, session/device management, email verification, and
+| password reset are all implemented, per docs/05-api-specification.md
+| section 3.
 |
 | Fail-closed by default: every route in this group requires a valid access
 | token unless explicitly exempted below, per docs/14-production-hardening.md
 | section 5 ("a forgotten annotation fails closed, not open"). Register,
-| login, oauth, and refresh are public (each is itself a way to establish a
-| session, so none can require one already exists) -- everything else
-| defaults to protected.
+| login, oauth, refresh, password/forgot, password/reset, and email/verify
+| are public (each either establishes a session or is itself the credential
+| for a pre-authentication action) -- everything else defaults to protected,
+| including email/resend (only a logged-in user needs to re-request their
+| own verification email).
 |
 | All routes carry the 'auth' rate limiter (10 req/min per IP), per
 | docs/05-api-specification.md section 7.
@@ -44,6 +46,17 @@ Route::middleware(['auth:api', 'throttle:auth'])->group(function () {
         ->withoutMiddleware('auth:api');
 
     Route::post('auth/logout', [AuthController::class, 'logout']);
+
+    Route::post('auth/password/forgot', [AuthController::class, 'forgotPassword'])
+        ->withoutMiddleware('auth:api');
+
+    Route::post('auth/password/reset', [AuthController::class, 'resetPassword'])
+        ->withoutMiddleware('auth:api');
+
+    Route::post('auth/email/verify', [AuthController::class, 'verifyEmail'])
+        ->withoutMiddleware('auth:api');
+
+    Route::post('auth/email/resend', [AuthController::class, 'resendVerification']);
 
     Route::get('auth/sessions', [SessionController::class, 'index']);
 

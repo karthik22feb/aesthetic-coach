@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** Infrastructure, Authentication Foundation (register/login/logout, hardened), refresh-token rotation, and session/device management are merged to `main`. Next: OAuth foundation (Google/Apple Sign-In).
+**Phase 1 · Sprint 1 in progress.** Infrastructure, Authentication Foundation (register/login/logout, hardened), refresh-token rotation, and session/device management are merged to `main`. OAuth foundation and email verification/password reset are both implemented and pushed, awaiting review/merge. Next: review and merge both PRs, then Flutter Login/Signup screens.
 
 ---
 
@@ -52,6 +52,48 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-13 — Sprint 1 · Email Verification & Password Reset (Task 14)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 14 (Email verification + password reset endpoints)
+**Objective:** Implement FR-104 (email verification) and FR-105 (password reset) completely and securely, per frozen documentation where it exists.
+
+**Files Changed:**
+- `backend/database/migrations/2026_08_13_043803_modify_password_reset_tokens_table.php` — new; corrects `password_reset_tokens` from Laravel's unmodified default shape to the frozen spec (`token_hash` CHAR(64), `expires_at`, `email` VARCHAR(190))
+- `backend/database/migrations/2026_08_13_043805_create_email_verification_tokens_table.php` — new; mirrors `password_reset_tokens` exactly
+- `backend/app/Modules/Auth/Models/{PasswordResetToken,EmailVerificationToken}.php` — new
+- `backend/app/Modules/Auth/Exceptions/{InvalidPasswordResetTokenException,InvalidEmailVerificationTokenException}.php` — new
+- `backend/app/Modules/Auth/Http/Requests/{ForgotPasswordRequest,ResetPasswordRequest,VerifyEmailRequest}.php` — new
+- `backend/app/Modules/Auth/Mail/{PasswordResetMail,EmailVerificationMail}.php` + Blade views — new
+- `backend/app/Modules/Auth/Listeners/SendVerificationEmail.php` — new; wires `UserRegistered` → verification email, closing a gap flagged in that event's own docblock since the Authentication Foundation session
+- `backend/app/Modules/Auth/Services/AuthService.php` — `forgotPassword()`, `resetPassword()`, `sendVerificationEmail()`, `verifyEmail()`
+- `backend/app/Modules/Auth/Http/Controllers/AuthController.php`, `routes.php`, `AuthServiceProvider.php` — new endpoints + listener registration
+- `backend/tests/Feature/Auth/{PasswordResetTest,EmailVerificationTest}.php` — new, 34 tests
+
+**Database Changes:**
+- `password_reset_tokens` corrected to match Database Design § 3.1 (was previously Laravel's default shape — a known, previously-flagged inconsistency, never fixed because the feature didn't exist until now)
+- New: `email_verification_tokens` (no frozen table spec exists for this — see Known Issues)
+
+**API Changes:**
+- `POST /auth/password/forgot`, `POST /auth/password/reset` (FR-105, fully per frozen spec)
+- `POST /auth/email/verify`, `POST /auth/email/resend` (FR-104 — endpoint contract invented this session, see Known Issues)
+
+**Flutter Changes:**
+- None
+
+**Tests Executed:**
+- Pest Feature tests (real MySQL): 102 passed (68 prior baseline on this branch + 34 new) — see this session's own report for the exact command and full breakdown. Pint: 84 files, clean. `composer validate --strict`: clean.
+- Live smoke test: real register → verification email delivered via Mailhog → forgot-password → reset email delivered via Mailhog → token consumed → login with new password succeeded.
+
+**Known Issues:**
+- **FR-104 (email verification) has no documented API contract anywhere** in the frozen documentation (checked API Specification, Authentication feature, API Examples, Database Design, Mobile Architecture — all consistently silent). Resolved this session, with the user's explicit approval, by mirroring the fully-specified FR-105 (password reset) pattern exactly: same token shape, same 60-minute TTL, same single-use/hashed-storage model. See `ENGINEERING_DECISION_LOG.md` for the full reasoning and the exact endpoints built. If this gap is ever formally closed in the frozen docs, reconcile against what was actually shipped.
+- A successful password reset revokes all of the user's active sessions across every device — not explicitly mandated by any frozen document, inferred from BR-3's existing precedent (any suspected-compromise signal revokes the affected session(s)). Documented as an engineering decision, not silently assumed.
+- BR-5 (max 10 concurrent device sessions) remains unenforced by register/login/oauth — unchanged, still out of scope, flagged again for whenever it's picked up.
+
+**Git Commit:** `<pending — see this session's own report>` on `feature/email-verification-password-reset`, branched from `main` (does not include the still-unmerged `feature/auth-oauth`)
+
+**Next Task:** Review and merge both `feature/auth-oauth` and `feature/email-verification-password-reset`, then Flutter Login/Signup screens (Sprint 1, Task 17).
 
 ### 2026-08-11 — Sprint 1 · Session Management PR Review & Merge
 

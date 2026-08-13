@@ -9,24 +9,41 @@ use App\Modules\Auth\Enums\Platform;
 use App\Modules\Auth\Events\SessionRevoked;
 use App\Modules\Auth\Events\UserRegistered;
 use App\Modules\Auth\Exceptions\InvalidCredentialsException;
+use App\Modules\Auth\Exceptions\InvalidEmailVerificationTokenException;
 use App\Modules\Auth\Exceptions\InvalidOAuthTokenException;
+use App\Modules\Auth\Exceptions\InvalidPasswordResetTokenException;
 use App\Modules\Auth\Exceptions\InvalidRefreshTokenException;
 use App\Modules\Auth\Exceptions\OAuthEmailConflictException;
 use App\Modules\Auth\Exceptions\SessionNotFoundException;
 use App\Modules\Auth\Exceptions\SessionRevokedException;
+use App\Modules\Auth\Mail\EmailVerificationMail;
+use App\Modules\Auth\Mail\PasswordResetMail;
 use App\Modules\Auth\Models\AuthRefreshToken;
 use App\Modules\Auth\Models\Device;
+use App\Modules\Auth\Models\EmailVerificationToken;
 use App\Modules\Auth\Models\OAuthIdentity;
+use App\Modules\Auth\Models\PasswordResetToken;
 use App\Modules\Auth\Models\User;
 use App\Modules\Auth\Support\OAuthClaims;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class AuthService
 {
+    /**
+     * Email verification and password reset tokens share the same
+     * lifetime (60 minutes) -- FR-105's acceptance criteria states this
+     * explicitly for password reset; FR-104 (email verification) has no
+     * documented token contract at all, so this session mirrors the
+     * password-reset value for consistency rather than inventing a
+     * different one (see ENGINEERING_DECISION_LOG.md).
+     */
+    protected const TOKEN_TTL_MINUTES = 60;
+
     public function __construct(
         protected TokenService $tokenService,
         protected OAuthVerifierFactory $oauthVerifiers,
@@ -344,6 +361,143 @@ class AuthService
         foreach ($tokens as $token) {
             SessionRevoked::dispatch($token);
         }
+    }
+
+    /**
+     * Issues a password reset token and emails it, per FR-105 ("Reset link
+     * expires in 60 minutes, single use"). Deliberately silent (no
+     * exception, no signal of any kind) when the email doesn't match a
+     * user -- the controller returns the same generic response either way,
+     * per the documented anti-enumeration rule (Edge Cases: "generic 'if
+     * this email exists, a reset link was sent' response").
+     *
+     * The mail is queued rather than sent synchronously specifically so
+     * that a found vs. not-found email can't be distinguished by response
+     * timing (a real SMTP round-trip vs. doing nothing) -- queuing is a
+     * fast, roughly constant-time operation either way.
+     */
+    public function forgotPassword(string $email): void
+    {
+        $user = User::where('email', $email)->first();
+
+        if ($user === null) {
+            return;
+        }
+
+        $plainToken = Str::random(64);
+
+        PasswordResetToken::where('email', $email)->delete();
+        PasswordResetToken::create([
+            'email' => $email,
+            'token_hash' => hash('sha256', $plainToken),
+            'expires_at' => now()->addMinutes(self::TOKEN_TTL_MINUTES),
+        ]);
+
+        Mail::to($email)->queue(new PasswordResetMail($plainToken));
+    }
+
+    /**
+     * Consumes a password reset token: sets the new password, revokes every
+     * one of the user's active sessions across all devices, and deletes the
+     * token so it can never be replayed. Session revocation isn't
+     * explicitly mandated by any frozen document, but is the safe default
+     * consistent with this module's existing security posture (BR-3 already
+     * revokes an entire session family on any suspected-compromise signal;
+     * a password reset is exactly that kind of signal) -- see
+     * ENGINEERING_DECISION_LOG.md.
+     *
+     * @throws InvalidPasswordResetTokenException
+     */
+    public function resetPassword(string $token, string $newPassword): void
+    {
+        $record = PasswordResetToken::where('token_hash', hash('sha256', $token))->first();
+
+        if ($record === null || $record->expires_at->isPast()) {
+            throw new InvalidPasswordResetTokenException;
+        }
+
+        $user = User::where('email', $record->email)->first();
+
+        if ($user === null) {
+            // Unreachable in practice (the user existed when the token was
+            // issued), but treated as an invalid token rather than a 500 if
+            // it somehow happens (e.g. account deleted in the interim).
+            throw new InvalidPasswordResetTokenException;
+        }
+
+        $revokedTokens = DB::transaction(function () use ($user, $newPassword, $record) {
+            // password_hash has a 'hashed' cast (User::casts()), so
+            // assigning the plaintext here bcrypt-hashes it automatically --
+            // same mechanism register() already relies on.
+            $user->update(['password_hash' => $newPassword]);
+
+            $tokens = AuthRefreshToken::where('user_id', $user->id)
+                ->whereNull('revoked_at')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($tokens as $refreshToken) {
+                $this->tokenService->revoke($refreshToken);
+            }
+
+            PasswordResetToken::where('email', $record->email)->delete();
+
+            return $tokens;
+        });
+
+        foreach ($revokedTokens as $refreshToken) {
+            SessionRevoked::dispatch($refreshToken);
+        }
+    }
+
+    /**
+     * Issues an email verification token and emails it. Called by
+     * SendVerificationEmail (on UserRegistered) and by the authenticated
+     * resend endpoint. A no-op if the user is already verified.
+     */
+    public function sendVerificationEmail(User $user): void
+    {
+        if ($user->email_verified_at !== null) {
+            return;
+        }
+
+        $plainToken = Str::random(64);
+
+        EmailVerificationToken::where('email', $user->email)->delete();
+        EmailVerificationToken::create([
+            'email' => $user->email,
+            'token_hash' => hash('sha256', $plainToken),
+            'expires_at' => now()->addMinutes(self::TOKEN_TTL_MINUTES),
+        ]);
+
+        Mail::to($user->email)->queue(new EmailVerificationMail($plainToken));
+    }
+
+    /**
+     * Consumes an email verification token: marks the account verified and
+     * deletes the token so it can never be replayed.
+     *
+     * @throws InvalidEmailVerificationTokenException
+     */
+    public function verifyEmail(string $token): User
+    {
+        $record = EmailVerificationToken::where('token_hash', hash('sha256', $token))->first();
+
+        if ($record === null || $record->expires_at->isPast()) {
+            throw new InvalidEmailVerificationTokenException;
+        }
+
+        $user = User::where('email', $record->email)->first();
+
+        if ($user === null) {
+            throw new InvalidEmailVerificationTokenException;
+        }
+
+        $user->forceFill(['email_verified_at' => now()])->save();
+
+        EmailVerificationToken::where('email', $record->email)->delete();
+
+        return $user;
     }
 
     /**
