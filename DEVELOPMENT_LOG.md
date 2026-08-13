@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. No Flutter code exists yet. Next: Flutter project scaffold + Riverpod/go_router (Tasks 5–6), then Login/Signup screens (Task 17).
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is implemented and verified on `feature/flutter-foundation`, pending merge. Next: merge that branch, then Login/Signup screens (Task 17).
 
 ---
 
@@ -52,6 +52,46 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-13 — Sprint 1 · Flutter Mobile Foundation (Tasks 5–7)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Tasks 5–7 (Flutter project scaffold, Riverpod/go_router skeleton, mobile CI)
+**Objective:** Implement the Flutter mobile foundation that Task 17 (Login/Signup) depends on — `mobile/` did not exist at the start of this session. Explicitly out of scope: any authentication UI, business logic, or Phase 2 work.
+
+**Files Changed:**
+- `mobile/` — new Flutter project (`flutter create`, org `com.aestheticcoach`, android+ios platforms only), folder structure per [Mobile Architecture § 2](docs/08-mobile-architecture.md#2-folder-organization): `lib/{app,core,features,shared}`, `test/{unit,widget,integration}`
+- `mobile/lib/app/{app.dart,router.dart,app_shell.dart,theme/app_theme.dart}` — `ProviderScope` root, `MaterialApp.router`, `StatefulShellRoute.indexedStack` with 5 branches (Home/Train/Coach/Nutrition/Progress per [UI/UX Design System § 4](docs/06-ui-ux-design-system.md#4-navigation)), `NavigationBar` shell, placeholder Material 3 theme
+- `mobile/lib/features/{home,workouts,coach,nutrition,progress}/presentation/*_screen.dart` — 5 placeholder screens, presentation-layer only, each with a keyed content widget for test targeting
+- `mobile/lib/core/{network,storage,sync,error,di}/`, `mobile/lib/shared/{widgets,utils}/` — empty (`.gitkeep`) per architecture, intentionally unpopulated this session
+- `mobile/test/unit/app_theme_test.dart`, `mobile/test/widget/app_shell_test.dart` — 3 + 3 tests
+- `.github/workflows/mobile-ci.yml` — new; analyze/format-check/test job, path-filtered to `mobile/**`, triggers on PR to `main` and push to `main`
+- `mobile/pubspec.yaml` — added `flutter_riverpod`, `go_router`
+
+**Database Changes:**
+- None.
+
+**API Changes:**
+- None.
+
+**Flutter Changes:**
+- See Files Changed — this session *is* the first Flutter work in the repo.
+
+**Tests Executed:**
+- `flutter analyze`: 0 issues (1 unused-import issue found and fixed mid-session).
+- `dart format --output=none --set-exit-if-changed .`: clean (8 files needed reformatting initially, fixed).
+- `flutter test`: 6 passed (3 unit, 3 widget).
+- Mobile CI negative test: pushed an intentional `dart format` violation, confirmed the GitHub Actions run failed on the format-check step, reverted it, confirmed a subsequent run passed. Verified via the public Actions run list and status badge (no `gh`/API credentials available in this environment).
+- Not executed: `flutter run`/`flutter build` (no Android SDK, no Chrome, no Linux desktop build toolchain on the dev server; installing the ~31-package LLVM/clang toolchain was judged unnecessary resource use on a memory-constrained shared server and skipped — `flutter analyze` + `flutter test` don't require it).
+
+**Known Issues:**
+- True build/run verification of the Flutter app has never been performed in this environment — flagged in `NEXT_TASK.md` for whoever picks up Task 17+, in case an on-device/emulator check becomes necessary.
+- The Flutter SDK's snap installation requires `HOME=/var/flutter-home` on every invocation on this specific dev server, because the real `$HOME` (`/home/administrator`) sits on a partition that is at 100% capacity — unrelated to this project, caused by other tenants' data on the shared box. See `ENGINEERING_DECISION_LOG.md` for the full diagnosis.
+- Module 2 (Authentication)'s own Definition of Done still requires Tasks 17–20 (Login/Signup, `AuthInterceptor`, secure token storage, staging E2E) — none of those were started this session, per explicit scope.
+
+**Git Commit:** `0939ad6` (scaffold+CI), `1edf2cf`/`10788ea` (CI negative-test verification + revert), `d6d8b40` (CI trigger narrowed back to documented spec) — all on `feature/flutter-foundation`, not yet merged
+
+**Next Task:** Review and merge `feature/flutter-foundation`, then Flutter Login/Signup screens (Sprint 1, Task 17).
 
 ### 2026-08-13 — Sprint 1 · Authentication Milestone Finalization (OAuth + Email Verification/Password Reset merge)
 
