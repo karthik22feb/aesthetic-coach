@@ -8,18 +8,13 @@
 
 ## Task
 
-**Review and merge `feature/flutter-foundation`, then start Task 17 (Login + Signup screens).**
+**Task 17 — Flutter Login + Signup screens.**
 
-Tasks 5, 6, and 7 (Flutter project scaffold, Riverpod/go_router foundation, mobile CI) are **implemented, verified, and pushed**, but **not yet merged** to `main`:
-
-- Branch: `feature/flutter-foundation`
-- PR: https://github.com/karthik22feb/aesthetic-coach/pull/new/feature/flutter-foundation
-
-Once reviewed and merged, Task 17's dependency (Task 6) is satisfied and Login/Signup screens can begin for real.
+Tasks 5, 6, and 7 (Flutter project scaffold, Riverpod/go_router foundation, mobile CI) are **merged to `main`** as of commit `38f1da6` (squash-merge of PR [#1](https://github.com/karthik22feb/aesthetic-coach/pull/1)). Task 17's dependency (Task 6) is satisfied — Login/Signup screens can begin for real. **Not started yet.**
 
 ## Context
 
-- Module: [Authentication (Module 2)](docs/IMPLEMENTATION_ORDER.md#2-authentication) — backend complete; this branch is the Flutter foundation portion
+- Module: [Authentication (Module 2)](docs/IMPLEMENTATION_ORDER.md#2-authentication) — backend complete; Flutter foundation now also merged
 - Sprint: [Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup)
 - **Environment note for whoever picks this up:** the Flutter SDK was not installed on this Linux dev server at all before this session. It's now installed via `snap install flutter --classic`, but two non-obvious fixes were required and matter for future sessions:
   1. `snap` apps need an active systemd user session — run `loginctl enable-linger administrator` once if a fresh shell reports "cannot run snap applications on this system" (already done; only relevant if the server is rebuilt).
@@ -50,4 +45,4 @@ Once reviewed and merged, Task 17's dependency (Task 6) is satisfied and Login/S
 
 ---
 
-**Last updated:** 2026-08-13 · **Session:** Flutter Mobile Foundation (Tasks 5–7) · **Status:** Flutter project scaffold, Riverpod/go_router skeleton, and mobile CI implemented and verified on `feature/flutter-foundation` — awaiting review/merge. Task 17 (Login/Signup) not started.
+**Last updated:** 2026-08-14 · **Session:** Flutter Mobile Foundation merge (Tasks 5–7) · **Status:** Flutter project scaffold, Riverpod/go_router skeleton, and mobile CI merged to `main` (`38f1da6`, squash-merge of PR #1). Task 17 (Login/Signup) not started.

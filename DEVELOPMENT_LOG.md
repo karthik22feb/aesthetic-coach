@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is implemented and verified on `feature/flutter-foundation`, pending merge. Next: merge that branch, then Login/Signup screens (Task 17).
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is now also merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). Next: Login/Signup screens (Task 17).
 
 ---
 
@@ -52,6 +52,37 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-14 — Sprint 1 · Flutter Mobile Foundation merge (Tasks 5–7)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Tasks 5–7 (Flutter project scaffold, Riverpod/go_router skeleton, mobile CI) — merge/finalization
+**Objective:** Independently re-verify the `feature/flutter-foundation` branch against the repository's actual current state (not a prior session's report), then take it through the documented PR → CI → review → squash-merge workflow into `main`.
+
+**Files Changed:**
+- No new application code — `mobile/`, `.github/workflows/mobile-ci.yml`, and the six operational docs already implemented/updated on the feature branch were merged as-is; independent re-verification (fresh `flutter analyze`/`format`/`test` run, backend-diff check, dependency check, folder-structure comparison against `08-mobile-architecture.md` § 2 and `06-ui-ux-design-system.md` § 4, CI run history re-checked via GitHub's API) found no defects.
+
+**Database Changes:**
+- None.
+
+**API Changes:**
+- None.
+
+**Flutter Changes:**
+- `mobile/` (project scaffold, Riverpod + go_router foundation, 5-tab shell, mobile CI) merged to `main` for the first time — previously only existed on the feature branch.
+
+**Tests Executed:**
+- Pre-merge (on `feature/flutter-foundation`, freshly re-run this session): `flutter analyze` clean, `dart format --set-exit-if-changed` clean, `flutter test` 6/6 passing. CI history independently re-verified via `gh`/GitHub REST API (not just the badge): run `0939ad6` success, run `1edf2cf` (intentional violation) **failure** (`Process completed with exit code 1`), run `10788ea` (revert) success.
+- PR #1 CI (`gh pr checks`, watched to completion): `Analyze, format check, test` — **pass**, 1m43s.
+- Post-merge (on `main`, HEAD `38f1da6`): `flutter pub get`, `flutter analyze` clean, `dart format --set-exit-if-changed` clean (0 changes), `flutter test` 6/6 passing. `git diff HEAD~1..HEAD -- backend/` confirmed empty. Tree hash of `main`'s HEAD confirmed identical to the feature branch's HEAD (`b9b103b...`), verifying the squash-merge preserved content exactly.
+
+**Known Issues:**
+- Same as before: `flutter build`/`flutter run` still not exercised in this environment (no Android SDK, Chrome, or Linux desktop build toolchain on the dev server). `/home` partition on the dev server remains at 100% capacity (unrelated infrastructure issue); `HOME=/var/flutter-home` override still required for all `flutter`/`dart` commands here.
+- The documented workflow's "1 approving review" requirement was explicitly waived by the user for this specific PR, after GitHub authentication was set up via a `gh auth login --web` device-flow (there was no pre-existing GitHub API credential in this environment) and it was confirmed that the only available GitHub identity (`karthik22feb`) was also the PR's author, making self-approval structurally impossible on GitHub. Recorded here for traceability, not as an engineering decision (process exception, not a technical trade-off).
+
+**Git Commit:** `38f1da6` — squash-merge of PR [#1](https://github.com/karthik22feb/aesthetic-coach/pull/1) (`feature/flutter-foundation` → `main`). Feature branch deleted locally and on `origin` after merge was independently confirmed via both the GitHub API (`state: MERGED`) and local git (tree-hash match, files present on `main`).
+
+**Next Task:** Flutter Login/Signup screens (Sprint 1, Task 17) — a separate implementation session, not started here.
 
 ### 2026-08-13 — Sprint 1 · Flutter Mobile Foundation (Tasks 5–7)
 
