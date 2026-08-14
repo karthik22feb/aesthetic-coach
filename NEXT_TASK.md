@@ -8,41 +8,38 @@
 
 ## Task
 
-**Flutter: create the project and scaffold, then Login + Signup screens.**
+**Review and merge `feature/flutter-foundation`, then start Task 17 (Login + Signup screens).**
 
-The entire backend Authentication module (Sprint 1, Tasks 9–16) is now merged to `main` and tagged `v1.0.0-auth-complete`. This is the first Flutter/mobile work in the project — **no Flutter code exists yet** (the `mobile/` directory is empty).
+Tasks 5, 6, and 7 (Flutter project scaffold, Riverpod/go_router foundation, mobile CI) are **implemented, verified, and pushed**, but **not yet merged** to `main`:
 
-The eventual target is [TASK_BREAKDOWN.md § Sprint 1, Task 17](docs/TASK_BREAKDOWN.md#sprint-1--infrastructure-authentication--project-setup) (Login + Signup screens), but Task 17 depends on Task 6, which depends on Task 5 — **neither is done**. Verify the actual starting point against `TASK_BREAKDOWN.md`'s dependency column before assuming Task 17 can start directly:
+- Branch: `feature/flutter-foundation`
+- PR: https://github.com/karthik22feb/aesthetic-coach/pull/new/feature/flutter-foundation
 
-1. **Task 5** — Create Flutter project, scaffold `lib/{app,core,features,shared}` structure (no dependency, start here)
-2. **Task 6** — Wire Riverpod + go_router skeleton with 5 placeholder tab routes (depends on 5)
-3. **Task 17** — Login + Signup screens, form validation (depends on 6)
-
-Do not skip 5/6 to jump straight to login/signup UI.
+Once reviewed and merged, Task 17's dependency (Task 6) is satisfied and Login/Signup screens can begin for real.
 
 ## Context
 
-- Module: [Authentication (Module 2)](docs/IMPLEMENTATION_ORDER.md#2-authentication) (backend, complete) — this task begins Flutter mobile work, still under the Sprint 1 umbrella
+- Module: [Authentication (Module 2)](docs/IMPLEMENTATION_ORDER.md#2-authentication) — backend complete; this branch is the Flutter foundation portion
 - Sprint: [Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup)
-- All backend auth endpoints are live on `main`: `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/oauth/google`, `POST /auth/oauth/apple`, `POST /auth/refresh`, `GET/DELETE /auth/sessions`, `POST /auth/password/forgot`, `POST /auth/password/reset`, `POST /auth/email/verify`, `POST /auth/email/resend`. 130/130 Pest tests passing. Build the Flutter UI against these documented contracts — do not redesign them.
-- Subsequent Sprint 1 Flutter tasks, in order after Task 17: Task 18 (Dio `AuthInterceptor`), Task 19 (secure token storage via `flutter_secure_storage`), Task 20 (end-to-end staging integration test).
+- **Environment note for whoever picks this up:** the Flutter SDK was not installed on this Linux dev server at all before this session. It's now installed via `snap install flutter --classic`, but two non-obvious fixes were required and matter for future sessions:
+  1. `snap` apps need an active systemd user session — run `loginctl enable-linger administrator` once if a fresh shell reports "cannot run snap applications on this system" (already done; only relevant if the server is rebuilt).
+  2. **`$HOME` (`/home/administrator`) is on a separate partition that is at 100% capacity (0 bytes free)** — unrelated to this project, caused by other tenants' data on this shared box. Flutter's snap wrapper downloads its SDK/tooling under `$HOME/snap/flutter/...` by default, which fails immediately on that full partition. Every `flutter`/`dart` invocation in this session used `export HOME=/var/flutter-home` first (a dedicated directory created on the healthy `/var` partition) — **keep doing this** for any `flutter`/`dart` command on this server until the `/home` partition issue is separately resolved (out of scope for this session; do not delete other tenants' files without explicit authorization).
+  - Android SDK and Chrome are not installed (not needed for Tasks 5–7: `flutter analyze`/`flutter test` don't require them). Installing the Linux desktop build toolchain (`clang`/`cmake`/`ninja`/`pkg-config`, ~31 packages including full LLVM) was deliberately skipped as unnecessary resource use given this server's tight memory (server has ~3.8GB RAM, was already near its limit before this session even started, from unrelated tenants' workloads) — a true `flutter build`/`flutter run` has never been exercised in this environment. If Task 17+ needs an actual on-device/emulator run to verify, that likely needs to happen somewhere other than this shared server.
 
 ## Primary Documents
 
-- [Mobile Architecture § 2 Folder Organization](docs/08-mobile-architecture.md#2-folder-organization) (Task 5)
-- [Mobile Architecture § 1 State Management](docs/08-mobile-architecture.md#1-state-management) and § 3 (Riverpod + go_router, per ADR-0004) (Task 6)
-- [Screens — Login](docs/screens/login.md), [Screens — Signup](docs/screens/signup.md) (Task 17)
-- [API Specification § 3](docs/05-api-specification.md#3-authentication-flow) — exact request/response shapes to build the UI against
+- [Screens — Login](docs/screens/login.md), [Screens — Signup](docs/screens/signup.md)
+- [Mobile Architecture § 9 Networking Layer](docs/08-mobile-architecture.md#9-networking-layer) (Dio, not yet wired — that's Task 18, after this)
+- [API Specification § 3](docs/05-api-specification.md#3-authentication-flow) — exact request/response shapes to build the UI against; all these endpoints are live on `main` (130/130 Pest tests passing)
 - [Authentication feature § Validation Rules](docs/features/authentication.md#validation-rules) — password policy (BR-1), required fields
 
-## Definition of Done
+## Definition of Done (for Task 17, once started)
 
-- [ ] Flutter project created, `lib/{app,core,features,shared}` structure matches Mobile Architecture § 2
-- [ ] Riverpod + go_router wired, 5 placeholder tab routes reachable
 - [ ] Login screen: email/password form, calls `POST /auth/login`, client-side validation matching BR-1
 - [ ] Signup screen: name/email/password form, calls `POST /auth/register`, same validation
 - [ ] Form validation errors surfaced from the API's `422 validation_failed` envelope, not just client-side checks
 - [ ] Widget tests for both screens
+- [ ] Screens live under `lib/features/auth/presentation/` per the folder org already scaffolded (Task 5) — `lib/features/auth/data/` and `application/` are still empty; this task starts populating them (`AuthRepository`, `AuthNotifier`) but does not implement `AuthInterceptor` or secure token storage (Tasks 18–19)
 
 ## After Completing This Task
 
@@ -53,4 +50,4 @@ Do not skip 5/6 to jump straight to login/signup UI.
 
 ---
 
-**Last updated:** 2026-08-13 · **Session:** Authentication Milestone Finalization (OAuth + Email Verification/Password Reset merge) · **Status:** Backend Authentication module (Sprint 1, Tasks 9–16) complete and merged; Flutter work (Tasks 5, 6, 17+) not yet started
+**Last updated:** 2026-08-13 · **Session:** Flutter Mobile Foundation (Tasks 5–7) · **Status:** Flutter project scaffold, Riverpod/go_router skeleton, and mobile CI implemented and verified on `feature/flutter-foundation` — awaiting review/merge. Task 17 (Login/Signup) not started.

@@ -50,6 +50,41 @@ Copy this template for every new entry:
 
 ## Entries
 
+### 2026-08-13 — Flutter/Dart tooling on the shared dev server requires a scoped `$HOME` override
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 5 (Flutter project scaffold)
+**Decision Summary:** Every `flutter`/`dart` invocation on this specific dev server (`10.24.8.219`) must run with `HOME=/var/flutter-home` set, because the real `$HOME` (`/home/administrator`) sits on a partition that is at 100% capacity for reasons unrelated to this project.
+
+**Background:**
+No Flutter SDK existed on the server at session start — this was a genuine hard-stop condition, resolved only after the user explicitly authorized installing it (`snap install flutter --classic`). Two independent infrastructure blockers surfaced during that install, neither caused by this project:
+1. `snap` requires an active systemd user session; the `administrator` account had none (`loginctl` reported "not logged in or lingering"). Fixed with `sudo loginctl enable-linger administrator` — a one-time, safe, non-destructive fix.
+2. The Flutter SDK download then failed partway through (`curl` error 23, "Failure writing output to destination") after ~1.35MB. Diagnosis: `df -h` showed `/` and `/var` both had 195GB+ free, but `/home` — a separate mount point — was at 100% capacity (0 bytes available, 69G/69G used). Flutter's snap wrapper downloads its SDK/tooling under `$HOME/snap/flutter/...` by default, which fails immediately when `$HOME` has no space. The largest consumers of `/home` are other tenants' directories on this shared server (a 50GB `backups/` folder and several unrelated tenant home directories) — not anything this project created or has authorization to delete.
+
+**Alternatives Considered:**
+- Delete files under `/home` to free space — rejected: the largest consumers are either unattributable as safe-to-delete or belong to other tenants (`chennai36`, `eservicesadmin`, `frappe`), and this session's own constraints explicitly forbid interfering with other tenants' data or taking destructive action without clear authorization.
+- Request the server owner resize/expand the `/home` partition — out of scope for an implementation session; flagged as a separate, standalone infrastructure issue rather than something to silently work around forever.
+- Scope `$HOME` to a new directory on a partition with room (chosen) — `/var` had 195GB free and is not shared with `/home`'s tenants in the same way; created `/var/flutter-home`, owned by `administrator`, and exported `HOME=/var/flutter-home` before every `flutter`/`dart` command for the rest of the session.
+
+**Final Decision:**
+Created `/var/flutter-home` (`sudo mkdir` + `sudo chown administrator:administrator`) and used `HOME=/var/flutter-home` as a per-invocation environment override for all Flutter/Dart tooling. The Flutter SDK (1.46GB) then downloaded successfully. No change was made to the `administrator` account's actual login `$HOME`, systemd config, or any other user/tenant's files.
+
+**Reasoning:**
+This isolates the fix to exactly the tool that needed it (Flutter/Dart), on exactly the partition that had room, without touching shared/unrelated state — consistent with the session's explicit resource-conservation and no-interference-with-other-tenants constraints. A global `$HOME` change would have been both unnecessary (nothing else on this server needs it) and riskier (touches the account's default environment for every other process).
+
+**Impact:**
+Any future session running `flutter`/`dart` commands directly on this dev server must set `HOME=/var/flutter-home` first, or those commands will fail the same way. This is now documented in `NEXT_TASK.md` so it isn't rediscovered from scratch. The underlying `/home` partition being full is a separate, still-unresolved infrastructure issue outside this project's scope — it may eventually need the server owner's attention if other tenants' tooling hits the same wall.
+
+**Related Files:**
+- None (server-level configuration, not repository code)
+
+**Related Documentation:**
+- [NEXT_TASK.md](NEXT_TASK.md) — environment note for future sessions
+
+**Git Commit:** N/A (infrastructure-only change, not a repository commit)
+
+**Author:** Claude (implementation session), authorized by the user via explicit "install Flutter anyway, proceed carefully" approval after a reported hard-stop condition
+
 ### 2026-08-13 — Email verification (FR-104) API contract: invented, not discovered, with explicit user approval
 
 **Sprint:** Phase 1 · Sprint 1
