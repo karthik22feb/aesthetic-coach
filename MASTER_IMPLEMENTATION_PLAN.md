@@ -2,7 +2,7 @@
 
 **Open this document first in every new session** (after skimming [PROJECT_STATUS.md](PROJECT_STATUS.md) if you need the fuller v1.0-freeze context). This is the **operational dashboard** — a live tracker layered on top of the frozen v1.0 planning documents in [`docs/`](docs/) and the execution framework introduced alongside this freeze, not a replacement for any of them. When in doubt about *what's true right now* (current phase, current sprint, current module, what's done), trust this document; when you need *why* or *how*, follow the links out to the relevant spec.
 
-**Last updated:** 2026-08-18 · **Updated by:** Mobile authentication (Sprint 1, Tasks 17–19 combined) — Login/Signup screens, Dio `AuthInterceptor` with single-flight transparent refresh, secure refresh-token storage implemented and verified (65/65 tests) on `feature/mobile-auth`, pending merge
+**Last updated:** 2026-08-18 · **Updated by:** Mobile authentication (Sprint 1, Tasks 17–19 combined) merged to `main` — squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`; Login/Signup screens, Dio `AuthInterceptor`, secure refresh-token storage now live on `main`, re-verified post-merge (65/65 tests)
 
 ---
 
@@ -44,7 +44,7 @@ Full rationale: [Phased Release Strategy](docs/PHASED_RELEASE_STRATEGY.md). The 
 | Aspect | Status |
 |---|---|
 | Documentation | ✅ Complete — 100+ documents covering architecture, database, API, mobile, backend, AI, testing, CI/CD, deployment, monitoring, security, and phased release planning |
-| Repository / codebase | 🟡 In progress — Laravel backend scaffolded; register/login/logout merged and hardened; Flutter scaffold + Riverpod/go_router + mobile CI merged to `main`; Flutter Login/Signup + `AuthInterceptor` + secure token storage implemented on `feature/mobile-auth`, pending merge |
+| Repository / codebase | 🟡 In progress — Laravel backend scaffolded; register/login/logout merged and hardened; Flutter scaffold + Riverpod/go_router + mobile CI merged to `main`; Flutter Login/Signup + `AuthInterceptor` + secure token storage merged to `main` |
 | Phase 1 implementation | 🟡 In progress — Sprint 1 (Infrastructure, Authentication) underway |
 | Phase 2 implementation | ⬜ Not started (blocked on Phase 1 launch, per [exit criteria](docs/PHASED_RELEASE_STRATEGY.md#exit-criteria-for-each-phase)) |
 | Production deployment | ⬜ Not started |
@@ -53,7 +53,7 @@ Full rationale: [Phased Release Strategy](docs/PHASED_RELEASE_STRATEGY.md). The 
 
 > **PHASE 1 — Intelligent Fitness Platform** (Sprint 1 in progress)
 
-[Phase 1 · Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) is underway: Infrastructure scaffolding is in progress, and the entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, and `v1.0.0-auth-complete`. Flutter mobile foundation (Tasks 5–7: project scaffold, Riverpod/go_router, mobile CI) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). Flutter Login/Signup, `AuthInterceptor`, and secure token storage (Tasks 17–19) are implemented and verified on `feature/mobile-auth`, pending merge; only Task 20 (staging E2E) remains unstarted. See [Next Recommended Task](#next-recommended-task).
+[Phase 1 · Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) is underway: Infrastructure scaffolding is in progress, and the entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, and `v1.0.0-auth-complete`. Flutter mobile foundation (Tasks 5–7: project scaffold, Riverpod/go_router, mobile CI) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). Flutter Login/Signup, `AuthInterceptor`, and secure token storage (Tasks 17–19) are merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`); only Task 20 (staging E2E) remains unstarted. See [Next Recommended Task](#next-recommended-task).
 
 ## Current Module
 
@@ -69,7 +69,7 @@ Update the **Status** column as work progresses. Full detail (objectives, delive
 
 | Sprint | Focus | Status | Notes |
 |---|---|---|---|
-| [Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) | Infrastructure, Authentication & Project Setup | 🟡 In progress | Backend Authentication complete and merged (`v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, `v1.0.0-auth-complete` — Tasks 9–16). Flutter foundation (Tasks 5–7) merged to `main` (PR #1, `38f1da6`). Flutter auth client (Tasks 17–19) implemented on `feature/mobile-auth`, pending merge. Task 8, Task 20 not started. |
+| [Sprint 1](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup) | Infrastructure, Authentication & Project Setup | 🟡 In progress | Backend Authentication complete and merged (`v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, `v1.0.0-auth-complete` — Tasks 9–16). Flutter foundation (Tasks 5–7) merged to `main` (PR #1, `38f1da6`). Flutter auth client (Tasks 17–19) merged to `main` (PR #2, `f7a2580`). Task 8, Task 20 not started. |
 | [Sprint 2](docs/16-development-roadmap.md#phase-1--sprint-2--user-profile--ai-onboarding) | User Profile & AI Onboarding | ⬜ Not started | |
 | [Sprint 3](docs/16-development-roadmap.md#phase-1--sprint-3--workout-engine--exercise-library) | Workout Engine & Exercise Library | ⬜ Not started | Highest offline-sync risk — see [Known Risks](#known-risks) |
 | [Sprint 4](docs/16-development-roadmap.md#phase-1--sprint-4--tracking-progress--habits) | Tracking, Progress & Habits | ⬜ Not started | |
@@ -299,7 +299,7 @@ Decisions explicitly **not yet made** by Product/Engineering, tracked so they ar
 
 **See [NEXT_TASK.md](NEXT_TASK.md) for the single current task** — it's kept in sync with this section and is the file to read for "what do I do right this moment." This section gives the broader sprint-level entry point: [Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup).
 
-The entire backend Authentication module is merged to `main` as of `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, and `v1.0.0-auth-complete`: register/login/logout, refresh-token rotation (reuse detection, family revocation), session/device management, Google/Apple Sign-In, email verification, and password reset. The Flutter mobile foundation (project scaffold, Riverpod/go_router, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, `AuthInterceptor`, secure token storage — Tasks 17–19) is implemented and verified on `feature/mobile-auth`, pending merge. The next task is to review/merge that branch, then Task 20 (staging E2E test) — see [NEXT_TASK.md](NEXT_TASK.md).
+The entire backend Authentication module is merged to `main` as of `v1.0.0-auth-foundation`, `v1.0.0-refresh-rotation`, `v1.0.0-session-management`, and `v1.0.0-auth-complete`: register/login/logout, refresh-token rotation (reuse detection, family revocation), session/device management, Google/Apple Sign-In, email verification, and password reset. The Flutter mobile foundation (project scaffold, Riverpod/go_router, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, `AuthInterceptor`, secure token storage — Tasks 17–19) is merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`). The next task is Task 20 (staging E2E test) — see [NEXT_TASK.md](NEXT_TASK.md).
 
 Concrete first steps (from that sprint's suggested Claude prompts):
 1. Scaffold the Laravel backend per [Backend Architecture § 1](docs/07-backend-architecture.md#1-folder-structure) and the Flutter mobile app per [Mobile Architecture § 2](docs/08-mobile-architecture.md#2-folder-organization).

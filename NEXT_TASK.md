@@ -8,18 +8,13 @@
 
 ## Task
 
-**Review and merge `feature/mobile-auth`, then Task 20 (end-to-end staging integration test).**
+**Task 20 — end-to-end staging integration test.**
 
-Tasks 17, 18, and 19 (Flutter Login/Signup screens, Dio `AuthInterceptor` with transparent refresh, secure token storage) are **implemented, verified, and pushed**, but **not yet merged** to `main`:
-
-- Branch: `feature/mobile-auth`
-- PR: see this session's final report for the exact URL (opened the same way as PR #1 — `gh pr create`, not merged)
-
-This session combined documented Tasks 17+18+19 into one implementation pass (the user explicitly requested the full flow in one session) — see the 2026-08-18 `DEVELOPMENT_LOG.md` entry for the full breakdown. **Only Task 20 remains** once this branch merges.
+Tasks 17, 18, and 19 (Flutter Login/Signup screens, Dio `AuthInterceptor` with transparent refresh, secure token storage) are **merged to `main`** as of commit `f7a2580` (squash-merge of PR [#2](https://github.com/karthik22feb/aesthetic-coach/pull/2)). This is implemented and locally verified (unit/widget tests, `flutter analyze`/`dart format`) — **not** yet verified against a live backend or a real device/emulator. **Only Task 20 remains** to close out Module 2 (Authentication).
 
 ## Context
 
-- Module: [Authentication (Module 2)](docs/IMPLEMENTATION_ORDER.md#2-authentication) — backend complete, Flutter foundation merged; this branch is the auth-client portion
+- Module: [Authentication (Module 2)](docs/IMPLEMENTATION_ORDER.md#2-authentication) — backend complete, Flutter foundation merged, Flutter auth client (Login/Signup, interceptor, secure storage) merged; only the staging E2E exit criterion remains
 - Sprint: [Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup)
 - **Environment note (unchanged from prior sessions):** `export HOME=/var/flutter-home` before any `flutter`/`dart` command on this server. The `/home` partition capacity issue that originally forced this is now resolved (~50GB free as of 2026-08-18), but the Flutter SDK's own cache still lives under `/var/flutter-home` from when it was installed there — switching back to the real `$HOME` would mean a ~2.3GB re-download for no functional benefit, so the override stays in place until a dedicated cleanup session decides otherwise.
 - Android SDK, Chrome, and the Linux desktop build toolchain (`clang`/`cmake`/`ninja`/`gtk3`) are still not installed — `flutter build`/`flutter run` remain unverified in this environment. This session's login/signup/auth-flow work was verified via `flutter analyze` + `flutter test` (65/65 passing) only, **not** against a real device/emulator, and **not** against the live backend (Docker wasn't started — server had only ~822Mi free / swap already 70% utilized at decision time; starting the full Laravel+MySQL+Redis stack was judged unsafe).
@@ -45,4 +40,4 @@ This session combined documented Tasks 17+18+19 into one implementation pass (th
 
 ---
 
-**Last updated:** 2026-08-18 · **Session:** Mobile Authentication (Tasks 17–19 combined) · **Status:** Login/Signup screens, Dio `AuthInterceptor` (single-flight transparent refresh), secure refresh-token storage, and the full auth state/routing integration implemented and verified (65/65 tests passing, `flutter analyze`/`dart format` clean) on `feature/mobile-auth` — awaiting review/merge. Not verified against a live backend or real device. Task 20 not started.
+**Last updated:** 2026-08-18 · **Session:** Mobile Authentication (Tasks 17–19 combined) merged · **Status:** Login/Signup screens, Dio `AuthInterceptor` (single-flight transparent refresh), secure refresh-token storage, and the full auth state/routing integration merged to `main` (`f7a2580`, squash-merge of PR #2) and re-verified post-merge (65/65 tests passing, `flutter analyze`/`dart format` clean). Not verified against a live backend or real device — only Task 20 (staging E2E) not started.

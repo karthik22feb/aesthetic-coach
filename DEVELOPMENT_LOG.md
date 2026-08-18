@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is implemented and verified on `feature/mobile-auth`, pending merge. Next: review/merge that branch, then Task 20 (staging E2E test).
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test).
 
 ---
 
@@ -52,6 +52,38 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-18 — Sprint 1 · Mobile Authentication merge (Tasks 17–19)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Tasks 17–19 — merge/finalization
+**Objective:** Independently verify PR #2's approval and CI state, squash-merge it into `main`, re-verify the merged result, and update the operational trackers accordingly.
+
+**Files Changed:**
+- No new application code — the implementation from the prior session's commit (`bdb6b0d` on `feature/mobile-auth`) was merged as-is. Independent re-verification (fresh `flutter analyze`/`format`/`test` run on `main`, backend-diff check, secret/keystore scan, presence check for all 15 new auth-module files, confirmation that access token stays memory-only and only the refresh token is ever passed to secure storage) found no defects.
+
+**Database Changes:**
+- None.
+
+**API Changes:**
+- None.
+
+**Flutter Changes:**
+- `mobile/lib/features/auth/**`, `mobile/lib/core/{network,storage,di,error}/**`, `mobile/lib/app/{splash_screen,router_refresh_notifier}.dart`, and the routing changes to `mobile/lib/app/router.dart` are now live on `main` for the first time.
+
+**Tests Executed:**
+- PR #2 approval independently verified via both `gh pr view --json reviews,reviewDecision` and the raw REST endpoint `gh api repos/karthik22feb/aesthetic-coach/pulls/2/reviews`: one `APPROVED` review from `karthikatacr` (account ID 318109433, distinct from the PR author `karthik22feb`), submitted against the exact head commit (`bdb6b0d`) — not a stale approval on an older commit.
+- PR #2 CI independently re-checked via `gh pr view`'s `statusCheckRollup`: `SUCCESS`.
+- `gh pr merge 2 --squash` executed; merge independently confirmed via a fresh `gh pr view 2 --json state,mergedAt,mergeCommit` call (not assumed from the command's exit status alone): `state: MERGED`, merge commit `f7a2580`.
+- Post-merge on `main` (fresh `flutter pub get`, `flutter analyze`, `dart format --set-exit-if-changed`, `flutter test`): analyze clean, format clean, **65/65 tests passing**. `git diff --check`: clean. Tree hash of `main`'s new HEAD confirmed identical to `feature/mobile-auth`'s tip, verifying the squash preserved content exactly.
+
+**Known Issues:**
+- Unchanged from the implementation session: not verified against a live backend (Docker not started — server memory too tight) or a real device/emulator. `NOT VERIFIED AGAINST LIVE BACKEND` remains accurate for this merged code, not just the pre-merge branch.
+- Same review-policy gap as PR #1: this repository has no GitHub branch-protection rule enforcing the "1 approving review" requirement from `docs/git-workflow.md` — the approval this time was genuine and independently verified, but the gate itself is still only a documented convention, not a platform-enforced one. Worth a future session configuring actual branch protection if that's desired.
+
+**Git Commit:** `f7a2580` — squash-merge of PR [#2](https://github.com/karthik22feb/aesthetic-coach/pull/2) (`feature/mobile-auth` → `main`)
+
+**Next Task:** Task 20 (end-to-end staging integration test) — blocked on a staging environment that doesn't exist yet. Not started this session.
 
 ### 2026-08-18 — Sprint 1 · Mobile Authentication (Tasks 17–19 combined)
 
