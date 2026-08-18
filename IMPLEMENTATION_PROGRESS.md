@@ -17,7 +17,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | Module | Status | Progress | Started | Completed |
 |---|---|---|---|---|
 | 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | In Progress | 75% | 2026-08-06 | — |
-| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 75% | 2026-08-07 | — |
+| 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 100% | 2026-08-07 | — |
 | 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Pending | 0% | — | — |
 | 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Pending | 0% | — | — |
 | 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
@@ -37,7 +37,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 
 Module 1 (Infrastructure) — per its [Definition of Done](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) ("both scaffolds build and run locally; CI runs lint + a trivial test on every PR; staging environment is reachable"): backend Laravel scaffold, local Docker dev environment, and backend CI are done and validated. The Flutter scaffold now also exists on `main` — `mobile/` (Riverpod + go_router foundation, 5-tab shell) and a mobile CI workflow (analyze/format/test on every PR) were merged via squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1) (commit `38f1da6`). `flutter analyze` and `flutter test` pass on `main`, but a true `flutter run`/`flutter build` has not been exercised in this environment (no Android SDK, no Chrome, no Linux desktop build toolchain available on the dev server — see [NEXT_TASK.md](NEXT_TASK.md) for detail), so "both scaffolds build and run locally" is only partially verified for the mobile side. Staging environment provisioning has not been addressed. Module stays **In Progress**.
 
-Module 2 (Authentication) — backend scope ([TASK_BREAKDOWN.md § Sprint 1, Tasks 9-16](docs/TASK_BREAKDOWN.md#sprint-1--infrastructure-authentication--project-setup)) is **fully complete and merged to `main`**, tagged `v1.0.0-auth-complete`. Per [IMPLEMENTATION_ORDER.md § 2](docs/IMPLEMENTATION_ORDER.md#2-authentication), this module's own Definition of Done and Outputs also require the Flutter login/signup screens, secure token storage, and a real-device-against-staging exit criterion (Tasks 17–20). None of these are implemented yet — Tasks 5–7 (Flutter project scaffold, Riverpod/go_router foundation, mobile CI) were prerequisite infrastructure work, tracked under Module 1 above, not Module 2 itself — so this module row stays **In Progress**, unchanged, until Tasks 17–20 land.
+Module 2 (Authentication) — backend scope ([TASK_BREAKDOWN.md § Sprint 1, Tasks 9-16](docs/TASK_BREAKDOWN.md#sprint-1--infrastructure-authentication--project-setup)) is **fully complete and merged to `main`**, tagged `v1.0.0-auth-complete`. Per [IMPLEMENTATION_ORDER.md § 2](docs/IMPLEMENTATION_ORDER.md#2-authentication), this module's own Definition of Done and Outputs also require the Flutter login/signup screens, secure token storage, and a real-device-against-staging exit criterion (Tasks 17–20). Tasks 17–19 (Login/Signup screens, Dio `AuthInterceptor` with transparent single-flight refresh, secure refresh-token storage) are now **implemented and verified on `feature/mobile-auth`, pending merge** — see [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md)'s 2026-08-18 entry. Only **Task 20** (real-device-against-staging E2E test) remains, and it's blocked on a staging environment that doesn't exist yet (Module 1's own gap). This module row stays **In Progress** until Task 20 lands.
 
 - [x] Register (email/password)
 - [x] Login (email/password)
@@ -54,10 +54,10 @@ Module 2 (Authentication) — backend scope ([TASK_BREAKDOWN.md § Sprint 1, Tas
 - [x] Apple Sign-In
 - [x] Email verification
 - [x] Password reset
-- [ ] Flutter: Login + Signup screens (Task 17) — not started
-- [ ] Flutter: Dio `AuthInterceptor`, transparent refresh (Task 18) — not started
-- [ ] Flutter: secure token storage (Task 19) — not started
-- [ ] End-to-end staging integration test (Task 20) — not started
+- [x] Flutter: Login + Signup screens (Task 17) — implemented on `feature/mobile-auth`, pending merge
+- [x] Flutter: Dio `AuthInterceptor`, transparent refresh (Task 18) — implemented on `feature/mobile-auth`, pending merge
+- [x] Flutter: secure token storage (Task 19) — implemented on `feature/mobile-auth`, pending merge
+- [ ] End-to-end staging integration test (Task 20) — not started (blocked on a staging environment, which doesn't exist yet)
 
 ## Phase 2 — AI Personal Coach
 
