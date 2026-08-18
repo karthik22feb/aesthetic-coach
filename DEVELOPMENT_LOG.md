@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is now also merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). Next: Login/Signup screens (Task 17).
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is implemented and verified on `feature/mobile-auth`, pending merge. Next: review/merge that branch, then Task 20 (staging E2E test).
 
 ---
 
@@ -52,6 +52,51 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-18 — Sprint 1 · Mobile Authentication (Tasks 17–19 combined)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Tasks 17–19 (Flutter Login/Signup screens, Dio `AuthInterceptor` with transparent refresh, secure token storage) — user explicitly requested the full combined scope in one session rather than three separate ones; TASK_BREAKDOWN.md's own split is preserved in the tracking docs for traceability, but the implementation genuinely spans all three.
+**Objective:** Build the complete mobile authentication client against the already-merged backend contract: register/login/logout/refresh, session state, auth-aware routing, and the token lifecycle (in-memory access token, securely-persisted rotating refresh token).
+
+**Files Changed:**
+- `mobile/lib/core/error/failure.dart` — new; typed `Failure` sealed class (`NetworkFailure`, `ValidationFailure`, `AuthFailure`, `RateLimitedFailure`, `ServerFailure`) per Mobile Architecture § 7
+- `mobile/lib/core/storage/secure_token_storage.dart` — new; wraps `flutter_secure_storage` behind a small `TokenKeyValueStore` interface (for testability without a platform channel), persists the refresh token only
+- `mobile/lib/core/network/{api_config,api_client,auth_token_store,auth_interceptor}.dart` — new; API base URL via `--dart-define`, shared `Dio` instance, in-memory access-token holder, and `AuthInterceptor` (header injection, single-flight 401-triggered refresh, exactly-once retry, exempt-path list for login/register/refresh)
+- `mobile/lib/core/di/network_providers.dart` — new; DI wiring, written as standalone functions (not inline closures) to avoid a Dart top-level-inference cycle from the Dio↔AuthRepository circular runtime dependency
+- `mobile/lib/features/auth/data/{auth_api,auth_repository}.dart`, `models/{auth_tokens,auth_user,auth_session}.dart` — new; hand-written (no codegen — see `ENGINEERING_DECISION_LOG.md`) API client and repository coordinating the server + token storage + in-memory token state, mapping `DioException`s to `Failure`s
+- `mobile/lib/features/auth/application/{auth_state,auth_notifier}.dart` — new; `AuthNotifier` (hand-written `Notifier`) owning login/register/logout/session-restore, with a staleness guard so a slow background session-restore can never clobber a more-recent explicit login/logout
+- `mobile/lib/features/auth/presentation/{login_screen,signup_screen}.dart` — new; email/password only (OAuth buttons from the design spec deliberately not implemented, out of scope), client-side validation mirroring backend rules (BR-1 password policy), inline server-error display
+- `mobile/lib/app/splash_screen.dart`, `router_refresh_notifier.dart` — new; Splash screen + a `ChangeNotifier` bridge so go_router's `redirect` re-evaluates on auth-state changes without rebuilding the router
+- `mobile/lib/app/router.dart` — modified; added `/splash`, `/login`, `/signup` routes and the authentication redirect guard around the existing 5-tab shell
+- `mobile/test/widget/app_shell_test.dart` — modified; now overrides `authNotifierProvider` with a fake authenticated notifier (the shell is gated by auth now, and `AuthNotifier.build()` would otherwise fire a real network call in every widget test)
+- `mobile/test/unit/{secure_token_storage,auth_repository,auth_notifier,auth_interceptor,auth_security}_test.dart`, `mobile/test/widget/{login_screen,signup_screen,routing_auth}_test.dart` — new, 46 additional tests
+- `mobile/pubspec.yaml` — added `dio`, `flutter_secure_storage` (via `flutter pub add`)
+
+**Database Changes:**
+- None.
+
+**API Changes:**
+- None — integrates against the already-live `POST /api/v1/auth/{register,login,refresh,logout}` contract, verified against the actual backend source (routes.php, AuthController.php, the Form Requests, UserResource, ApiResponse) rather than assumed from docs alone.
+
+**Flutter Changes:**
+- See Files Changed. This is the first real business-logic/state layer in `mobile/` — everything before this (Tasks 5–7) was scaffold/placeholder.
+
+**Tests Executed:**
+- `flutter analyze`: 0 issues (several rounds of fixes: a Dart top-level-inference cycle in the DI wiring, wrong relative import paths, `curly_braces_in_flow_control_structures` after `dart format` reflowed single-line validators, a `prefer_initializing_formals` lint deliberately suppressed with an explanation since following it would require private-named constructor parameters and break cross-file construction).
+- `dart format --set-exit-if-changed .`: clean, 0 changes.
+- `flutter test`: **65/65 passed** (19 pre-existing + 46 new: 5 token-storage, 9 repository, 8 notifier, 11 interceptor including single-flight/no-infinite-loop, 7 security-labeled, 6 login-screen, 8 signup-screen, 5 routing).
+- **Not verified:** a real device/emulator run (no Android SDK/Chrome/Linux desktop toolchain on this server, unchanged from Tasks 5–7), and the live backend (Docker was not started — server had ~822Mi free / swap already 70% utilized at decision time, judged unsafe to add the full Laravel+MySQL+Redis stack on top of that). Explicitly `NOT VERIFIED AGAINST LIVE BACKEND`, per this task's own instruction not to claim otherwise.
+
+**Known Issues:**
+- Session restoration after a pure token refresh has no `user` object (the real `POST /auth/refresh` response never includes one) — `AuthState.authenticated` can have `user: null` in that case. A `GET /me` call to populate identity after a cold-start restore is a natural follow-up once Module 3 (User Profile) exists.
+- Signup's documented destination is Onboarding (Module 4, not built yet) — successful signup currently routes to the same app shell as login. Flagged in `NEXT_TASK.md`, not silently faked.
+- The 2-second splash-restore timeout (`AuthNotifier.restoreTimeout`) uses `Future.timeout`, not a Dio `CancelToken` — if the underlying refresh call is unusually slow, it can still complete in the background after the timeout and write a valid session even though the UI already moved to Login. Low-impact (no security issue, just a rare UX inconsistency) and not fixed this session to avoid further scope growth.
+- The documented workflow's "1 approving review" requirement for the eventual PR/merge is unresolved by this session — same situation as PR #1's merge (see the 2026-08-14 entry).
+
+**Git Commit:** `<pending — see this session's own report>` on `feature/mobile-auth`, branched from `main` at `a190ae6`
+
+**Next Task:** Review and merge `feature/mobile-auth`, then Task 20 (end-to-end staging integration test) — blocked on a staging environment that doesn't exist yet.
 
 ### 2026-08-14 — Sprint 1 · Flutter Mobile Foundation merge (Tasks 5–7)
 
