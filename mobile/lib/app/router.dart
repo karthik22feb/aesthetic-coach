@@ -8,6 +8,7 @@ import '../features/auth/presentation/signup_screen.dart';
 import '../features/coach/presentation/coach_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/nutrition/presentation/nutrition_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
 import '../features/workouts/presentation/train_screen.dart';
 import 'app_shell.dart';
@@ -68,6 +69,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/signup',
         builder: (context, state) => const SignupScreen(),
+      ),
+      // Top-level (not a shell branch) since Profile isn't one of the 5
+      // bottom-nav tabs -- pushed from Home via context.push, so it gets
+      // its own back-stack entry over whichever tab the user was on,
+      // matching go_router's normal push semantics. Already covered by
+      // the redirect guard above: unauthenticated access falls through
+      // to the generic "not splash/not auth screen" branch, which
+      // redirects to /login exactly like any other protected route.
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
