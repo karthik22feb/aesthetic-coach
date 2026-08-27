@@ -140,3 +140,28 @@ test('/me uses the general API rate limiter, not the 10/min auth limiter', funct
         $response->assertOk();
     }
 });
+
+test('a nullable field can be explicitly cleared back to null after being set', function () {
+    $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload())->json('data');
+
+    $this->withHeader('Authorization', 'Bearer '.$register['accessToken'])
+        ->patchJson('/api/v1/me', ['sex' => 'female', 'dietaryRestrictions' => ['vegetarian']])
+        ->assertOk();
+
+    $response = $this->withHeader('Authorization', 'Bearer '.$register['accessToken'])
+        ->patchJson('/api/v1/me', ['sex' => null, 'dietaryRestrictions' => null]);
+
+    $response->assertOk();
+    $response->assertJsonPath('data.sex', null);
+    $response->assertJsonPath('data.dietaryRestrictions', []);
+});
+
+test('an empty name is rejected', function () {
+    $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload())->json('data');
+
+    $response = $this->withHeader('Authorization', 'Bearer '.$register['accessToken'])
+        ->patchJson('/api/v1/me', ['name' => '']);
+
+    $response->assertStatus(422)->assertJsonPath('error.code', 'validation_failed');
+    expect($response->json('error.details'))->toHaveKey('name');
+});

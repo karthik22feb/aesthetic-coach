@@ -29,7 +29,7 @@ class UpdateProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'string', 'max:120'],
+            'name' => ['sometimes', 'filled', 'string', 'max:120'],
             'timezone' => ['sometimes', 'string', 'timezone:all'],
             'unitPreference' => ['sometimes', Rule::enum(UnitPreference::class)],
             'dateOfBirth' => [
