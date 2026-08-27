@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Auth\Http\Controllers\ProfileController;
 use App\Modules\Auth\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,4 +63,25 @@ Route::middleware(['auth:api', 'throttle:auth'])->group(function () {
 
     Route::delete('auth/sessions/{deviceId}', [SessionController::class, 'destroy'])
         ->whereNumber('deviceId');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Profile Routes -- Sprint 2, Task 1 (docs/TASK_BREAKDOWN.md)
+|--------------------------------------------------------------------------
+|
+| GET/PATCH /me only -- DELETE /me and POST /me/export (also documented
+| under docs/api-examples/users-profile.md) belong to later tasks (account
+| deletion / data export, FR-108) and are deliberately not implemented
+| here.
+|
+| Uses the general 'api' limiter (120 req/min per user, docs/05-api-
+| specification.md section 7), not the 10/min 'auth' limiter above --
+| that one is scoped to brute-force-prone auth endpoints (register/login/
+| refresh/password-reset), not general authenticated API traffic.
+|
+*/
+Route::middleware(['auth:api', 'throttle:api'])->group(function () {
+    Route::get('me', [ProfileController::class, 'show']);
+    Route::patch('me', [ProfileController::class, 'update']);
 });
