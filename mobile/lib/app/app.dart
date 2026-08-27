@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/settings/application/theme_mode_notifier.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
 
@@ -13,6 +14,7 @@ class AestheticCoachApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'Aesthetic Coach',
@@ -20,9 +22,10 @@ class AestheticCoachApp extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       // Dark is the primary-designed theme (UI/UX Design System section 5),
-      // but the app follows the system setting by default -- both themes
+      // but the app follows the system setting by default unless the user
+      // overrides it from Settings (Sprint 2, Task 3) -- both themes
       // above are fully specified, not one inverted from the other.
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: router,
     );
   }

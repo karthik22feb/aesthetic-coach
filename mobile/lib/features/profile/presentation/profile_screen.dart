@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/error/failure.dart';
 import '../application/profile_notifier.dart';
@@ -10,14 +11,13 @@ import 'edit_profile_sheet.dart';
 
 /// docs/screens/profile.md. Renders the subset of that spec backed by
 /// data that actually exists yet: identity fields and the editable
-/// fields from [ProfileApi] (`GET/PATCH /me`). The summary stat row
-/// (total workouts, longest streak), the Body Measurements / Progress
-/// Photos entry points, and the gear-icon link to Settings are all
-/// deliberately NOT implemented here -- they depend on the Workout
-/// Engine, Habits, Body Measurements, Progress Photos, and Settings
-/// screens/modules, none of which exist yet (see this session's
-/// checkpoint report for the full reasoning). Nothing here fabricates
-/// placeholder data for those.
+/// fields from [ProfileApi] (`GET/PATCH /me`), plus the documented
+/// gear-icon link to Settings (Sprint 2, Task 3). The summary stat row
+/// (total workouts, longest streak) and the Body Measurements / Progress
+/// Photos entry points are still deliberately NOT implemented here --
+/// they depend on the Workout Engine, Habits, Body Measurements, and
+/// Progress Photos modules, none of which exist yet. Nothing here
+/// fabricates placeholder data for those.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -33,16 +33,24 @@ class ProfileScreen extends ConsumerWidget {
         // at the end of the scrollable field list below -- the list can
         // be taller than the viewport on smaller devices, which would
         // make the only edit affordance require scrolling to reach.
-        actions: profileState.status == ProfileStatus.loaded
-            ? [
-                IconButton(
-                  key: const Key('profile_edit_button'),
-                  icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Edit Profile',
-                  onPressed: () => _openEditSheet(context, profile!),
-                ),
-              ]
-            : null,
+        actions: [
+          if (profileState.status == ProfileStatus.loaded)
+            IconButton(
+              key: const Key('profile_edit_button'),
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit Profile',
+              onPressed: () => _openEditSheet(context, profile!),
+            ),
+          // Per docs/screens/profile.md's navigation diagram
+          // ("Profile -->|gear icon| Settings") -- always available,
+          // unlike Edit, since it needs no profile data to be useful.
+          IconButton(
+            key: const Key('profile_settings_button'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => context.push('/settings'),
+          ),
+        ],
       ),
       body: switch (profileState.status) {
         ProfileStatus.loading => const Center(

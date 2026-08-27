@@ -55,7 +55,7 @@ Session revoke failure → inline retry on that row; account deletion/export fai
 Sessions list shows a skeleton on load; toggles apply instantly (optimistic) with no loading state needed.
 
 ## Offline Behavior
-Theme/unit toggles work fully offline (local-only); session management, export, and deletion require connectivity and communicate that clearly per [Settings feature § Offline Behavior](../features/settings.md#offline-behavior).
+Theme toggling works fully offline (local-only); unit preference, session management, export, and deletion all require connectivity and communicate that clearly per [Settings feature § Offline Behavior](../features/settings.md#offline-behavior).
 
 ## Accessibility
 Destructive actions (delete account, revoke session, logout) use both color and explicit confirmation text ("This will permanently delete...") — never relying on red color alone, per [UI/UX Design System § 8](../06-ui-ux-design-system.md#8-accessibility).

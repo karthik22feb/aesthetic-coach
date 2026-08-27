@@ -10,6 +10,7 @@ import '../features/home/presentation/home_screen.dart';
 import '../features/nutrition/presentation/nutrition_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
+import '../features/settings/presentation/settings_screen.dart';
 import '../features/workouts/presentation/train_screen.dart';
 import 'app_shell.dart';
 import 'router_refresh_notifier.dart';
@@ -80,6 +81,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

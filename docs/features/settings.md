@@ -69,7 +69,7 @@ flowchart TD
 [Settings](../screens/settings.md) (root + all sub-sections above, mostly single-screen with expandable sections rather than deep nesting, per [UI/UX Design System § 4](../06-ui-ux-design-system.md#4-navigation) shallow-navigation principle).
 
 ## Business Rules
-BR-6 (30-day soft-delete grace period), NFR-8 (export delivered as a JSON bundle via pre-signed URL). Theme/unit preference are device-local display settings in MVP (not synced across devices via the server) — simpler and sufficient since the mobile app is the only client.
+BR-6 (30-day soft-delete grace period), NFR-8 (export delivered as a JSON bundle via pre-signed URL). Theme is a device-local display setting (not synced across devices) — simpler and sufficient since the mobile app is the only client. Unit preference is **not** device-local: it's the same server-backed `users.unit_preference` column also editable from [Profile](profile.md) (Sprint 2, Task 1/2) — this corrects an earlier version of this sentence that described both as local-only, written before that column existed. The Settings screen's unit-preference control (Sprint 2, Task 3) reads/writes that same field rather than keeping a second, divergent local copy.
 
 ## Validation Rules
 Theme/unit selections are enum-constrained (no free text); account deletion requires an explicit typed or double-tap confirmation, consistent with the destructive-action pattern in [Components — Dialog](../components/dialog.md).
@@ -88,7 +88,7 @@ Theme/unit selections are enum-constrained (no free text); account deletion requ
 Standard error envelope; deletion confirmation failure (e.g., network drop mid-request) leaves the account in its prior (non-deleted) state — deletion is not a multi-step process that could leave data half-purged from the user's perspective.
 
 ## Offline Behavior
-Theme/unit changes apply instantly offline (local-only settings). Export and deletion requests require connectivity to submit but the confirmation UI is clear about that requirement.
+Theme changes apply instantly offline (local-only). Unit preference requires connectivity, same as any other Profile field edit — see [Profile § Offline Behavior](profile.md#offline-behavior). Export and deletion requests require connectivity to submit but the confirmation UI is clear about that requirement.
 
 ## Acceptance Criteria
 ```gherkin
