@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. This does not change Task 20's blocked status.
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. **Sprint 2 · Task 2** (Flutter Profile screen + Edit Profile sheet) is also merged to `main` (squash-merge of [PR #5](https://github.com/karthik22feb/aesthetic-coach/pull/5), commit `cc2385f`), re-verified post-merge (90/90 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. **Module 3 (User Profile) is now Complete.** Neither task changes Task 20's blocked status.
 
 ---
 
@@ -52,6 +52,47 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-27 — Sprint 2 · Flutter Profile screen merge (Task 2) — Module 3 Complete
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 2 — Flutter Profile screen (view + Edit Profile bottom sheet)
+**Objective:** Implement the Profile screen against the merged `GET/PATCH /me` backend endpoint, review it, and take it through the repository's normal review-and-merge process into `main`.
+
+**Files Changed:**
+- `mobile/lib/features/profile/data/models/{profile_enums,user_profile}.dart` — client-side model mirroring `ProfileResource` exactly, with `UnitPreference`/`BiologicalSex` enums whose `.name` matches the backend's wire values
+- `mobile/lib/features/profile/data/{profile_api,profile_repository}.dart` — `GET/PATCH /me` calls on the shared `dioProvider` (so `AuthInterceptor` applies automatically) and `Failure` mapping, mirroring `AuthApi`/`AuthRepository`'s established pattern
+- `mobile/lib/features/profile/application/{profile_state,profile_notifier}.dart` — load/update state management; `updateProfile()` rethrows `Failure` rather than absorbing it into screen state, so edit failures surface inline in the Edit Profile sheet without disturbing the screen behind it
+- `mobile/lib/features/profile/presentation/profile_screen.dart` — view screen (avatar/initials, name, read-only email, six editable fields); edit trigger is an AppBar icon rather than a button at the end of the scrollable list, after widget tests caught the list's lazy sliver not building an end-of-list button within the default test viewport
+- `mobile/lib/features/profile/presentation/edit_profile_sheet.dart` — bottom sheet covering all seven PATCH-able fields (`SegmentedButton` for unit preference, dropdown for sex, a date picker capped at 18+ years to match the backend rule, a chip editor for dietary restrictions); always submits the full field set rather than a diff, since the sheet is always initialized from the current profile
+- `mobile/lib/core/di/profile_providers.dart` — DI wiring, built on the existing `dioProvider`
+- `mobile/lib/app/router.dart` — new top-level `/profile` route, already covered by the existing auth redirect guard
+- `mobile/lib/features/home/presentation/home_screen.dart` — AppBar profile icon as the navigation entry point (Profile isn't one of the 5 fixed bottom-nav tabs)
+- `mobile/test/unit/{profile_repository,profile_notifier}_test.dart`, `mobile/test/widget/profile_screen_test.dart` — 25 new tests
+
+**Database Changes:**
+- None (mobile only)
+
+**API Changes:**
+- None (consumes the existing `GET/PATCH /me` from PR #4; no backend changes)
+
+**Flutter Changes:**
+- New Profile screen + Edit Profile bottom sheet, reachable via a profile icon on the Home tab's AppBar
+
+**Tests Executed:**
+- `flutter analyze`: 0 issues
+- `dart format --set-exit-if-changed .`: clean
+- `flutter test`: 90/90 passing (65 existing + 25 new), re-run on the feature branch and again on merged `main`
+- `flutter build apk --release`: SUCCESS, 53.7MB, using PR #3's OOM-safe Gradle config (`-Xmx1536m`, daemon/parallel disabled); memory sampled every 3s throughout, peak ~2.9GB used, 0 OOM-killer events in `dmesg`; APK independently verified as a genuine Android package (`file`, `unzip -l` showing `AndroidManifest.xml`, `classes.dex`, native libs for 3 ABIs)
+
+**Known Issues:**
+- No staging or real-device/emulator verification — local Docker (backend) and this dev server's Flutter toolchain (mobile) only.
+- Deliberately deferred, not bugs: the feature doc's summary-stats row (workouts/streaks) and Body Measurements/Progress Photos entry points (F-PROF-02/F-PROF-03) depend on modules that don't exist yet (Workout Engine, Habits, Body Measurements, Progress Photos). The Settings gear icon is deferred to Sprint 2 Task 3.
+- The commit (`fbb51f6`) was originally made directly on local `main` before PR #3 was merged; to submit it through a normal PR without amending it, it was cherry-picked (unchanged content, new hash `21d65b7`) onto `feature/flutter-profile-screen` branched from `origin/main`. `fbb51f6` itself was never rewritten.
+
+**Git Commit:** `cc2385f` — `feat(profile): add Flutter Profile screen (view + Edit Profile sheet) (#5)` (squash-merge of PR #5, cherry-picked from `fbb51f6`). Approved by an independent reviewer (`shashwanth22dec`) distinct from the author before merge.
+
+**Next Task:** Task 20 (staging E2E test, Module 2) remains the primary blocked item — see [NEXT_TASK.md](NEXT_TASK.md). Module 3 (User Profile) is now Complete; the next Sprint 2 candidates are Task 3 (basic Settings screen) and Task 9 (Pest tests: profile update + onboarding goal creation).
 
 ### 2026-08-27 — Sprint 2 · User Profile endpoint merge (Task 1)
 
