@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test).
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. This does not change Task 20's blocked status.
 
 ---
 
@@ -52,6 +52,47 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-27 — Sprint 2 · User Profile endpoint merge (Task 1)
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 1 — `GET/PATCH /me` endpoint + Form Request validation
+**Objective:** Implement the profile view/update endpoint, review it, fix the findings, and take it through the repository's normal review-and-merge process into `main`.
+
+**Files Changed:**
+- `backend/app/Modules/Auth/Enums/{UnitPreference,Sex}.php` — new backed enums for the two profile fields that aren't free text
+- `backend/app/Modules/Auth/Dtos/UpdateProfileDto.php` — partial-update DTO (column-mapped, sparse array, to distinguish "field omitted" from "field explicitly set to null")
+- `backend/app/Modules/Auth/Http/Requests/UpdateProfileRequest.php` — `sometimes`-rule PATCH validation; a post-review fix added `'filled'` to `name` so an explicit empty string is rejected
+- `backend/app/Modules/Auth/Http/Resources/ProfileResource.php` — flat response shape matching `docs/api-examples/users-profile.md` exactly
+- `backend/app/Modules/Auth/Services/ProfileService.php`, `Http/Controllers/ProfileController.php` — update/fetch logic; `$request->user()` only ever resolves the caller's own account, so no user-ID input surface exists (IDOR structurally impossible)
+- `backend/app/Modules/Auth/Models/User.php` — extended `#[Fillable]`/casts for the six new columns; also fixed a latent bug where `AuthServiceProvider`'s JWT guard callback set `currentDeviceId` as an undeclared dynamic property, which Eloquent's `__set()` silently tracked as an attribute — the first `save()` call from `ProfileService` then tried to persist a nonexistent column. Fixed by declaring it as a real typed property.
+- `backend/app/Modules/Auth/routes.php` — new `GET/PATCH /me` route group on the general `throttle:api` limiter (120/min), not the 10/min `throttle:auth` limiter
+- `backend/app/Providers/AppServiceProvider.php` — registered the general `api` rate limiter (previously empty `boot()`)
+- `backend/tests/Feature/Auth/ProfileTest.php` — 14 tests; two added post-review (explicit null-clearing, empty-name rejection)
+
+**Database Changes:**
+- New migration `2026_08_19_120000_add_profile_fields_to_users_table.php` — additive only, adds `timezone`, `unit_preference`, `date_of_birth`, `sex`, `height_cm`, `dietary_restrictions` to `users`; `down()` drops all six
+
+**API Changes:**
+- `GET /me`, `PATCH /me` — both new, both behind `auth:api` + `throttle:api`. `DELETE /me` and `POST /me/export` (also in the API examples doc) are explicitly out of scope for this task.
+
+**Flutter Changes:**
+- None (backend only)
+
+**Tests Executed:**
+- Pest Feature tests: 144/144 passing (543 assertions), re-run post-merge on `main` and matching the pre-merge baseline exactly
+- Pint: clean (111 files)
+- `composer validate --strict`: clean
+- `git diff --check`: clean
+
+**Known Issues:**
+- No backend CI workflow exists yet (`mobile-ci.yml` is path-filtered to `mobile/**`), so this PR triggered zero automated status checks — approvals and validation were performed manually/independently instead.
+- Not verified against a live/staging backend or a real device — local Docker verification only.
+- The Flutter Profile screen (Sprint 2, Task 2) is not implemented, so Module 3's own exit criterion isn't met yet even though Task 1 is done.
+
+**Git Commit:** `5f7f706` — `feat(profile): GET/PATCH /me endpoint (#4)` (squash-merge of PR #4; squashes `dd03696` implementation + `96bc4c2` review-fix commit). Approved by two independent reviewers (`karthikatacr`, `shashwanth22dec`) distinct from the author before merge, per `docs/git-workflow.md`'s two-approval requirement for migration-touching changes.
+
+**Next Task:** Task 20 (staging E2E test, Module 2) remains the primary blocked item — see [NEXT_TASK.md](NEXT_TASK.md). Once unblocked, Sprint 2 Task 2 (Flutter Profile screen) is the next candidate for this module.
 
 ### 2026-08-18 — Sprint 1 · Mobile Authentication merge (Tasks 17–19)
 

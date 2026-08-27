@@ -18,7 +18,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 |---|---|---|---|---|
 | 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | In Progress | 75% | 2026-08-06 | — |
 | 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 100% | 2026-08-07 | — |
-| 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Pending | 0% | — | — |
+| 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | In Progress | 50% | 2026-08-19 | — |
 | 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Pending | 0% | — | — |
 | 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
 | 6. [Workout Engine](docs/IMPLEMENTATION_ORDER.md#6-workout-engine) | Pending | 0% | — | — |
@@ -33,7 +33,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | 15. [Deployment](docs/IMPLEMENTATION_ORDER.md#15-deployment) | Pending | 0% | — | — |
 | 16. [Production Launch](docs/IMPLEMENTATION_ORDER.md#16-production-launch) | Pending | 0% | — | — |
 
-**Phase 1 overall progress: 0 of 16 modules complete (0%); 2 in progress.**
+**Phase 1 overall progress: 0 of 16 modules complete (0%); 3 in progress.**
 
 Module 1 (Infrastructure) — per its [Definition of Done](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) ("both scaffolds build and run locally; CI runs lint + a trivial test on every PR; staging environment is reachable"): backend Laravel scaffold, local Docker dev environment, and backend CI are done and validated. The Flutter scaffold now also exists on `main` — `mobile/` (Riverpod + go_router foundation, 5-tab shell) and a mobile CI workflow (analyze/format/test on every PR) were merged via squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1) (commit `38f1da6`). `flutter analyze` and `flutter test` pass on `main`, but a true `flutter run`/`flutter build` has not been exercised in this environment (no Android SDK, no Chrome, no Linux desktop build toolchain available on the dev server — see [NEXT_TASK.md](NEXT_TASK.md) for detail), so "both scaffolds build and run locally" is only partially verified for the mobile side. Staging environment provisioning has not been addressed. Module stays **In Progress**.
 
@@ -58,6 +58,11 @@ Module 2 (Authentication) — backend scope ([TASK_BREAKDOWN.md § Sprint 1, Tas
 - [x] Flutter: Dio `AuthInterceptor`, transparent refresh (Task 18) — merged to `main` (`f7a2580`); not verified against a live backend or real device
 - [x] Flutter: secure token storage (Task 19) — merged to `main` (`f7a2580`); not verified against a live backend or real device
 - [ ] End-to-end staging integration test (Task 20) — not started (blocked on a staging environment, which doesn't exist yet)
+
+Module 3 (User Profile) — scope per [IMPLEMENTATION_ORDER.md § 3](docs/IMPLEMENTATION_ORDER.md#3-user-profile) is `GET/PATCH /me` plus the Flutter Profile screen. [TASK_BREAKDOWN.md § Sprint 2, Task 1](docs/TASK_BREAKDOWN.md#sprint-2--user-profile--ai-onboarding) (`GET/PATCH /me` endpoint + Form Request validation) is **merged to `main`** (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), approved by two independent reviewers distinct from the author (`karthikatacr`, `shashwanth22dec`) before merge. Re-verified post-merge on `main`: 144/144 Pest tests passing (543 assertions), Pint clean, `composer validate --strict` clean. This is backend/local verification only — no staging or real-device verification has been performed for this endpoint. This work landed ahead of Module 2's own Task 20 in strict roadmap sequence; Module 2 is unaffected and still gates Sprint 1 completion. Task 2 (Flutter Profile screen) has not been started, so Module 3's own exit criterion ("a user can view and edit every profile field") is not yet met. Module row stays **In Progress**.
+
+- [x] `GET/PATCH /me` endpoint + Form Request validation (Task 1) — merged to `main` (`5f7f706`, PR #4); backend/local verification only
+- [ ] Flutter Profile screen (Task 2) — not started
 
 ## Phase 2 — AI Personal Coach
 
