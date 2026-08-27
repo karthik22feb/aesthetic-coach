@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. **Sprint 2 · Task 2** (Flutter Profile screen + Edit Profile sheet) is also merged to `main` (squash-merge of [PR #5](https://github.com/karthik22feb/aesthetic-coach/pull/5), commit `cc2385f`), re-verified post-merge (90/90 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. **Module 3 (User Profile) is now Complete.** Neither task changes Task 20's blocked status.
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. **Sprint 2 · Task 2** (Flutter Profile screen + Edit Profile sheet) is also merged to `main` (squash-merge of [PR #5](https://github.com/karthik22feb/aesthetic-coach/pull/5), commit `cc2385f`), re-verified post-merge (90/90 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. **Module 3 (User Profile) is now Complete.** **Sprint 2 · Task 3** (basic Settings screen: theme, unit preference) is also merged to `main` (squash-merge of [PR #6](https://github.com/karthik22feb/aesthetic-coach/pull/6), commit `450442b`), re-verified post-merge (102/102 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. None of these three tasks changes Task 20's blocked status.
 
 ---
 
@@ -52,6 +52,48 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-28 — Sprint 2 · Settings screen merge (Task 3)
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 3 — basic Settings screen (theme, unit preference)
+**Objective:** Implement the next genuinely unblocked Sprint 2 task after Task 1/2, following the same discover-roadmap → implement → test → PR → review-gate → merge cycle.
+
+**Files Changed:**
+- `mobile/lib/core/storage/theme_storage.dart` — thin `SharedPreferences` wrapper for the theme choice; genuinely local-only, unlike unit preference (no server column for theme exists)
+- `mobile/lib/core/di/settings_providers.dart` — `themeStorageProvider`, matching the `network_providers.dart`/`profile_providers.dart` DI pattern
+- `mobile/lib/features/settings/application/theme_mode_notifier.dart` — `Notifier<ThemeMode>`, restores the persisted choice on `build()` (same fire-and-forget pattern as `AuthNotifier`/`ProfileNotifier`)
+- `mobile/lib/features/settings/presentation/settings_screen.dart` — theme `SegmentedButton` (local, instant) and a unit-preference `SegmentedButton` that reads/writes `profileNotifierProvider` directly via a partial `PATCH /me` (`{"unitPreference": ...}`), rather than a second, divergent local copy of that value
+- `mobile/lib/app/app.dart` — `MaterialApp.router`'s `themeMode` now reads `themeModeProvider` instead of the previous hardcoded `ThemeMode.system`
+- `mobile/lib/app/router.dart` — new top-level `/settings` route, covered by the existing auth redirect guard
+- `mobile/lib/features/profile/presentation/profile_screen.dart` — added the gear-icon AppBar action documented in `docs/screens/profile.md`'s navigation diagram ("Profile -->|gear icon| Settings"), previously deferred pending this task
+- `mobile/pubspec.yaml`/`pubspec.lock` — added `shared_preferences` (via `flutter pub add`), the one new dependency this task strictly required for genuine theme persistence
+- `mobile/test/unit/theme_mode_notifier_test.dart`, `mobile/test/widget/settings_screen_test.dart` — 12 new tests
+- `docs/features/settings.md`, `docs/screens/settings.md` — corrected a stale Business Rules/Offline Behavior sentence describing unit preference as device-local; that was accurate before Sprint 2 Task 1/2 shipped it server-backed. Fixed in this PR per the project's own Change Management Process for gaps found during implementation. Theme remains correctly described as local-only.
+
+**Database Changes:**
+- None (mobile only; unit preference already had a working `users.unit_preference` column and endpoint from Task 1)
+
+**API Changes:**
+- None (consumes the existing `PATCH /me`, sending only `{"unitPreference": ...}`)
+
+**Flutter Changes:**
+- New Settings screen, reachable via a gear icon on the Profile screen's AppBar
+
+**Tests Executed:**
+- `flutter analyze`: 0 issues
+- `dart format --set-exit-if-changed .`: clean
+- `flutter test`: 102/102 passing (90 existing + 12 new), re-run on the feature branch and again on merged `main`
+- `flutter build apk --release`: SUCCESS both pre- and post-merge, 54.1MB; the pre-merge build (first time compiling the new `shared_preferences_android` native plugin) peaked at ~3.8GB of 3.9GB total RAM with heavy swap use — tighter than any prior build on this server, though still 0 OOM-killer events (verified via `dmesg`); the post-merge rebuild reused Gradle's build cache and peaked at a comfortable ~2.7GB
+
+**Known Issues:**
+- No staging or real-device/emulator verification — this dev server has no KVM/usable Android emulator.
+- Deliberately deferred, not bugs: notification preferences, Devices & Sessions UI, data export, account deletion, and a logout button are all out of this task's scope, per `docs/features/settings.md`'s own Release Phase split (basic: Sprint 2; finalized: Sprint 6). Devices & Sessions and logout already have working backends (Sprint 1) but no UI yet.
+- Worth watching: the first build after adding `shared_preferences` pushed memory usage right to the edge of this server's capacity. Future dependency additions should be watched closely for the same effect.
+
+**Git Commit:** `450442b` — `feat(settings): add basic Settings screen (theme, unit preference) (#6)` (squash-merge of PR #6). Approved by an independent reviewer (`shashwanth22dec`) distinct from the author before merge.
+
+**Next Task:** Task 20 (staging E2E test, Module 2) remains the primary blocked item — see [NEXT_TASK.md](NEXT_TASK.md). Sprint 2 candidates once picking further ahead-of-sequence work: Task 4 (`goals` table migration, no dependencies) and Task 9 (Pest tests: profile update + onboarding goal creation).
 
 ### 2026-08-27 — Sprint 2 · Flutter Profile screen merge (Task 2) — Module 3 Complete
 
