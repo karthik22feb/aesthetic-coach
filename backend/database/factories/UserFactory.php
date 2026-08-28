@@ -12,6 +12,14 @@ use Illuminate\Support\Facades\Hash;
 class UserFactory extends Factory
 {
     /**
+     * Laravel's default model-name guessing assumes `App\Models\X`; this
+     * project's models live under `App\Modules\*\Models` instead, so it
+     * must be declared explicitly (see the matching `newFactory()`
+     * override on the model itself).
+     */
+    protected $model = User::class;
+
+    /**
      * The current password being used by the factory.
      */
     protected static ?string $password;
