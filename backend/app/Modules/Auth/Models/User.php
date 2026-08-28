@@ -4,6 +4,7 @@ namespace App\Modules\Auth\Models;
 
 use App\Modules\Auth\Enums\Sex;
 use App\Modules\Auth\Enums\UnitPreference;
+use App\Modules\Goals\Models\Goal;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -31,6 +32,18 @@ class User extends Authenticatable
      * it as a `users` column that doesn't exist.
      */
     public ?int $currentDeviceId = null;
+
+    /**
+     * Laravel's convention-based factory resolution assumes `App\Models\X`
+     * -> `Database\Factories\XFactory`; it doesn't account for this
+     * project's `App\Modules\*\Models` nesting (docs/07-backend-architecture.md
+     * § 1), so without this override `User::factory()` looks for a
+     * non-existent `Database\Factories\Modules\Auth\Models\UserFactory`.
+     */
+    protected static function newFactory(): UserFactory
+    {
+        return UserFactory::new();
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -71,6 +84,14 @@ class User extends Authenticatable
     public function oauthIdentities(): HasMany
     {
         return $this->hasMany(OAuthIdentity::class);
+    }
+
+    /**
+     * @return HasMany<Goal>
+     */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(Goal::class);
     }
 
     /**
