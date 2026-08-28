@@ -19,7 +19,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | In Progress | 75% | 2026-08-06 | — |
 | 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | In Progress | 100% | 2026-08-07 | — |
 | 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Complete | 100% | 2026-08-19 | 2026-08-27 |
-| 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Pending | 0% | — | — |
+| 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | In Progress | 15% | 2026-08-28 | — |
 | 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
 | 6. [Workout Engine](docs/IMPLEMENTATION_ORDER.md#6-workout-engine) | Pending | 0% | — | — |
 | 7. [Exercise Library](docs/IMPLEMENTATION_ORDER.md#7-exercise-library) | Pending | 0% | — | — |

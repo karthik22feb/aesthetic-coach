@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. **Sprint 2 · Task 2** (Flutter Profile screen + Edit Profile sheet) is also merged to `main` (squash-merge of [PR #5](https://github.com/karthik22feb/aesthetic-coach/pull/5), commit `cc2385f`), re-verified post-merge (90/90 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. **Module 3 (User Profile) is now Complete.** **Sprint 2 · Task 3** (basic Settings screen: theme, unit preference) is also merged to `main` (squash-merge of [PR #6](https://github.com/karthik22feb/aesthetic-coach/pull/6), commit `450442b`), re-verified post-merge (102/102 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. None of these three tasks changes Task 20's blocked status. Separately, this project's **first real Android device/emulator testing** (on a local Windows dev machine, not the Linux server, which has no KVM) found and fixed a genuine client-side URL-construction bug: `ApiConfig.baseUrl` lacking a trailing slash caused Dio to silently concatenate relative paths into malformed URLs (e.g. `/api/v1auth/register` instead of `/api/v1/auth/register`), surfacing as a misleading "Unable to reach the server" error on every API call. Fixed and merged to `main` (squash-merge of [PR #7](https://github.com/karthik22feb/aesthetic-coach/pull/7), commit `11da8ea`), re-verified post-merge (104/104 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) and confirmed against the real emulator + local Laravel backend (register/login/`GET /me` all now hit the correct paths). This does not touch Task 20 or staging/real-device *E2E* verification, which remain separately BLOCKED/not started.
+**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. **Sprint 2 · Task 2** (Flutter Profile screen + Edit Profile sheet) is also merged to `main` (squash-merge of [PR #5](https://github.com/karthik22feb/aesthetic-coach/pull/5), commit `cc2385f`), re-verified post-merge (90/90 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. **Module 3 (User Profile) is now Complete.** **Sprint 2 · Task 3** (basic Settings screen: theme, unit preference) is also merged to `main` (squash-merge of [PR #6](https://github.com/karthik22feb/aesthetic-coach/pull/6), commit `450442b`), re-verified post-merge (102/102 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. None of these three tasks changes Task 20's blocked status. Separately, this project's **first real Android device/emulator testing** (on a local Windows dev machine, not the Linux server, which has no KVM) found and fixed a genuine client-side URL-construction bug: `ApiConfig.baseUrl` lacking a trailing slash caused Dio to silently concatenate relative paths into malformed URLs (e.g. `/api/v1auth/register` instead of `/api/v1/auth/register`), surfacing as a misleading "Unable to reach the server" error on every API call. Fixed and merged to `main` (squash-merge of [PR #7](https://github.com/karthik22feb/aesthetic-coach/pull/7), commit `11da8ea`), re-verified post-merge (104/104 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) and confirmed against the real emulator + local Laravel backend (register/login/`GET /me` all now hit the correct paths). This does not touch Task 20 or staging/real-device *E2E* verification, which remain separately BLOCKED/not started. Separately, **Sprint 2 · Task 4** (`goals` table migration + Eloquent model) is merged to `main` (squash-merge of [PR #8](https://github.com/karthik22feb/aesthetic-coach/pull/8), commit `7c5d12e`), approved by two independent reviewers distinct from the author (the migration-touching review requirement) and re-verified post-merge (`composer validate --strict` clean, Pint clean, a direct Tinker database round-trip against the real local MySQL instance confirmed) — the full Pest suite remains **not verified locally**, blocked by a pre-existing Docker-Compose `mysql`-hostname requirement in `phpunit.xml` that this bare-Windows environment doesn't satisfy (confirmed unrelated to this change: it reproduces identically on unrelated pre-existing tests). Task 4 provides only the migration/model layer; the `POST /goals` endpoint remains Sprint 4 scope, so **Module 4 (AI Onboarding) moves to In Progress**, not Complete. Does not touch or unblock Task 20.
 
 ---
 
@@ -52,6 +52,44 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-08-28 — Sprint 2 Task 4: `goals` table migration and model
+
+**Sprint:** Phase 1 · Sprint 2 — User Profile & AI Onboarding
+**Task ID:** Sprint 2, Task 4
+**Objective:** Add the `goals` table migration and Eloquent model per [Database Design § 3.5](docs/04-database-design.md#35-habits--goals), providing the persistence layer Module 4 (AI Onboarding) needs to seed a goal row during onboarding. Scoped narrowly to migration + model (the full `GET/POST/PATCH/DELETE /goals` CRUD API is Sprint 4 scope per [Goals feature](docs/features/goals.md#release-phase)).
+
+**Files Changed:**
+- `backend/database/migrations/2026_08_28_090000_create_goals_table.php` — new `goals` table
+- `backend/app/Modules/Goals/Models/Goal.php` — new Eloquent model, `user()` relation
+- `backend/app/Modules/Goals/Enums/{GoalType,GoalStatus}.php` — new backed enums
+- `backend/database/factories/GoalFactory.php` — new factory
+- `backend/app/Modules/Auth/Models/User.php` — added `goals()` inverse relation and a `newFactory()` override
+- `backend/database/factories/UserFactory.php` — added an explicit `$model` property
+
+**Database Changes:**
+- New migration `2026_08_28_090000_create_goals_table.php`: `goals` table (`id`, `user_id` FK cascade-on-delete, `type` enum, `title`, `target_metric`, `target_value`, `target_date`, `status` enum default `active`, `created_at`)
+
+**API Changes:**
+- None — the `POST /goals` endpoint is explicitly deferred to Sprint 4
+
+**Flutter Changes:**
+- None
+
+**Tests Executed:**
+- `composer validate --strict`: PASS
+- Laravel Pint (`--test`): PASS
+- Direct database round-trip via Tinker (create `User`+`Goal` against the real local MySQL 9 instance, verify enum casts, `user()`/`goals()` relations, `created_at` cast, delete): PASS — run both pre-merge and again post-merge on `main`
+- Full Pest suite: **NOT VERIFIED**. This bare-Windows local environment has no Docker-Compose `mysql` hostname, which `phpunit.xml` forces via `force="true"` on `DB_HOST=mysql`/`DB_PORT=3306`. Confirmed as a pre-existing, unrelated environment limitation, not a Task 4 regression: reproduces identically on `CorsTest` (0/4 passing, identical `getaddrinfo for mysql failed` error) before and after this change. This repository also has no backend CI workflow yet (`.github/workflows/` only contains `mobile-ci.yml`), so this suite has not been exercised in any other environment either.
+
+**Known Issues:**
+- Full Pest verification remains blocked pending either a Docker-capable environment or a deliberate, separately-authorized change to how the test DB connection is resolved locally (a hosts-file alias or an `.env.testing` override) — not attempted here since both require system-level changes beyond this task's scope.
+- Module 4 (AI Onboarding) is now In Progress, not Complete — Tasks 5–7, 10, 11 (onboarding screens, "Meet Your Coach" step, notification permission prompt, widget/integration tests) remain unstarted.
+- Does not touch or unblock Task 20, which remains BLOCKED.
+
+**Git Commit:** `7c5d12e` — `feat(backend): add goals table migration and model (#8)` (squash-merge of PR #8). Approved by two independent reviewers (`shashwanth22dec`, `karthikatacr`) distinct from the author before merge, per the migration-touching review requirement in [git-workflow.md](docs/git-workflow.md).
+
+**Next Task:** Not updated — [NEXT_TASK.md](NEXT_TASK.md) still points at Task 20 per its own documented update rule (only replaced once Task 20 itself lands).
 
 ### 2026-08-28 — First real Android device/emulator testing; Dio base-URL bug found and fixed
 
