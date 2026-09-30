@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for the app's own runtime network calls (Dio/HTTP to the
+         backend API), in every build variant, not just development.
+         The debug-only manifest (src/debug/AndroidManifest.xml) also adds
+         this permission, but for a narrower reason (the Flutter tool's own
+         hot-reload channel); that duplicate declaration is harmless. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="aesthetic_coach"
         android:name="${applicationName}"

@@ -59,7 +59,12 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ),
         ProfileStatus.error => _ErrorView(failure: profileState.failure!),
-        ProfileStatus.loaded => _ProfileView(profile: profile!),
+        ProfileStatus.loaded => RefreshIndicator(
+          key: const Key('profile_refresh_indicator'),
+          onRefresh: () =>
+              ref.read(profileNotifierProvider.notifier).loadProfile(),
+          child: _ProfileView(profile: profile!),
+        ),
       },
     );
   }
@@ -125,6 +130,10 @@ class _ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
+      // Always scrollable (even when content is shorter than the
+      // viewport) so the RefreshIndicator's pull gesture is reachable
+      // regardless of how many profile fields are set.
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         Row(
           children: [
