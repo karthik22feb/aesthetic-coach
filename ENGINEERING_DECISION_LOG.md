@@ -50,6 +50,241 @@ Copy this template for every new entry:
 
 ## Entries
 
+### 2026-09-29 — Task 20 Closure Scope — Verified Core Authentication With Explicit Follow-Up Items
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (closure scope reconciliation)
+**Decision Summary:** Task 20 is closed (`COMPLETE — VERIFIED SCOPE WITH FOLLOW-UP ITEMS`) on the basis of its runtime-verified core authentication scope — register, login, authenticated `/me`, refresh, and the `401 → AuthInterceptor → refresh → retry → success` cycle — rather than its full original five-stage definition. Email verification and explicit logout are recorded as separately tracked follow-up verification items, not claimed as tested.
+
+**Background:** Task 20's original frozen scope ([docs/IMPLEMENTATION_ORDER.md § 2, Exit Criteria](docs/IMPLEMENTATION_ORDER.md#2-authentication); [docs/TASK_BREAKDOWN.md § Sprint 1, Task 20](docs/TASK_BREAKDOWN.md)) is "register → verify email → login → refresh → logout, on staging." The final production validation session directly, runtime-verified register, login, authenticated `/me`, and refresh, with the security-critical `401 → AuthInterceptor → refresh → retry → success` cycle specifically proven via production server-log correlation. It did not separately exercise email verification (production mail is deferred, `MAIL_MAILER=log`, so no real verification email could be received) or an explicit logout call (the endpoint/code exists and is unmodified, but no dedicated runtime check was captured). Earlier documentation of this closure risked being read either too weakly (implying the `AuthInterceptor` work was unverified) or too strongly (implying the full five-stage chain was runtime-tested) depending on which paragraph a reader landed on — this entry and the accompanying documentation pass exist to remove that ambiguity.
+
+**Alternatives Considered:**
+- Reopen Task 20 and attempt to runtime-verify email verification and logout before closing it — rejected: explicitly out of scope for this reconciliation pass (a documentation-only task), and re-running production authentication tests was not requested; email verification specifically cannot be genuinely verified until a real mail transport is configured, which is its own separate, larger piece of work.
+- Mark Task 20 as still open/blocked until all five original stages are verified — rejected: the two unverified stages are not blocked on anything this project can resolve quickly (email verification needs a real mail provider; logout needs only a short dedicated verification pass, not new development), and the stage that Task 20 exists to de-risk — the `AuthInterceptor`'s refresh behavior — is the one that has been most rigorously proven, via direct server correlation rather than inference.
+- Describe Task 20 as fully complete without qualification (the wording risk this entry corrects) — rejected: would misrepresent the evidence and violate this project's explicit rule against manufacturing or overstating verification.
+- Mark Task 20 complete with an explicit, itemized closure-scope statement and separately tracked follow-up items (chosen) — the most honest available option: closes a task whose core risk is genuinely retired, while keeping the two unverified stages visible and actionable rather than silently dropped.
+
+**Final Decision:** Task 20 status is recorded as `COMPLETE — VERIFIED SCOPE WITH FOLLOW-UP ITEMS` everywhere it appears (`PROJECT_STATUS.md`, `MASTER_IMPLEMENTATION_PLAN.md`, `IMPLEMENTATION_PROGRESS.md`, `PRODUCTION_DEPLOYMENT_REPORT.md`), each with the same explicit verified/not-separately-verified breakdown. `PRODUCTION_DEPLOYMENT_REPORT.md § Task 20 — Closure Scope Reconciliation` is the canonical source for this breakdown; every other document cross-references it rather than restating it with different wording.
+
+**Reasoning:** A task-closure status is only useful if it's precise enough to be acted on later — "complete" alone would have let a future reader assume logout and email verification are safe to build on top of without further checking, which isn't true yet. Naming the gap explicitly, without reopening the investigation to close it immediately, matches this project's standing principle (see [Change Management Process](PROJECT_STATUS.md#change-management-process)) that documentation should reflect what's actually known, not what's convenient to claim.
+
+**Impact:** Any future session touching email verification or logout should treat them as unverified-in-production, not as "already covered by Task 20" — they remain real follow-up items ([PRODUCTION_DEPLOYMENT_REPORT.md § Remaining Follow-Up Items](PRODUCTION_DEPLOYMENT_REPORT.md#remaining-follow-up-items)). No code, test, or infrastructure changed as a result of this decision — it is a documentation/classification decision only.
+
+**Related Files:**
+- None (documentation-only; no application code affected)
+
+**Related Documentation:**
+- [PRODUCTION_DEPLOYMENT_REPORT.md § Task 20 — Closure Scope Reconciliation](PRODUCTION_DEPLOYMENT_REPORT.md#task-20--closure-scope-reconciliation)
+- [docs/IMPLEMENTATION_ORDER.md § 2 Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) (the original frozen exit criteria, preserved and cross-referenced, not rewritten)
+
+**Git Commit:** `<pending — working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Task 20 Final Scope Reconciliation session
+
+### 2026-09-29 — WAF `PATCH`/`PUT`/`DELETE` block: no application-level workaround
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (staging/production E2E verification)
+**Decision Summary:** The institutional WAF fronting `https://acrinternal.iitm.ac.in/aesthetic-coach` blocks `PATCH`/`PUT`/`DELETE` HTTP methods entirely (confirmed via correlated client/server testing — these requests never reach Laravel). No application-side workaround (e.g. method-override tunneling over `POST`, or changing any endpoint's documented HTTP method) was made or is planned to route around this.
+
+**Background:** `PATCH /me` and `DELETE /auth/sessions/{deviceId}` both stopped working through the new HTTPS path, initially appearing to be an application bug. Direct `curl` testing against the WAF, cross-referenced with the production access log, showed `GET`/`POST` pass through normally while `PATCH`/`PUT`/`DELETE` are intercepted by the WAF itself (a distinct WAF-generated 404 page, never reaching this server). This blocked the originally-planned Task 20 trigger (Edit Profile → Save, a `PATCH`), requiring a pivot to a `GET`-based trigger (Profile pull-to-refresh) to complete the `AuthInterceptor` verification at all.
+
+**Alternatives Considered:**
+- Tunnel `PATCH`/`PUT`/`DELETE` over `POST` with a method-override header/param (common workaround pattern) — rejected: this project's explicit constraints forbid bypassing the WAF in application code, and a method-override shim is exactly that kind of bypass; it would also mean every client and every future endpoint has to remember to use it for this one institutional deployment, silently diverging from the documented API contract.
+- Change the documented HTTP methods for affected endpoints to `POST` — rejected: contradicts [API Specification § 2 Conventions](docs/05-api-specification.md#2-conventions) and would be an architecture-affecting API contract change made to accommodate one specific institutional deployment's network policy, not a real product requirement.
+- Leave it blocked and request a WAF administrator change (chosen) — the correct owner for a network-layer policy is the network/WAF administrators, not this codebase; flagged as an explicit open infrastructure follow-up in [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md) rather than worked around.
+
+**Final Decision:** No code change. The limitation is documented as a real, present-tense gap in actual product functionality (not just a testing inconvenience) in [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md), with the WAF administrators named as the sole owner of a fix.
+
+**Reasoning:** Working around a network-security control from inside the application would both violate this task's explicit constraints and create a worse long-term outcome (a permanent, undocumented divergence between the real API contract and what actually works through this one deployment path) than accepting a documented, owned-elsewhere limitation.
+
+**Impact:** Through this specific HTTPS path, profile updates and session revocation are currently non-functional for a real end user; every other flow (register, login, refresh, logout if implemented as `POST`, `GET`-based reads) is unaffected. Any future session touching this deployment should not attempt to "fix" this in application code — the fix is a WAF allowlist change, tracked as an open follow-up item.
+
+**Related Files:**
+- None (infrastructure/network policy, not repository code)
+
+**Related Documentation:**
+- [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)
+
+**Git Commit:** N/A (infrastructure-only; no application code changed)
+
+**Author:** Claude (AI Software Engineer), Production Flutter AuthInterceptor E2E Verification session
+
+### 2026-09-29 — Profile pull-to-refresh added to make Task 20's `AuthInterceptor` trigger reachable
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (staging/production E2E verification)
+**Decision Summary:** Added a `RefreshIndicator`-based pull-to-refresh to the Profile screen (`mobile/lib/features/profile/presentation/profile_screen.dart`), calling `ProfileNotifier.loadProfile()` on pull, so `GET /me` could be re-triggered in-session to observe a natural 401→refresh cycle — without this, the WAF's `PATCH` block ruled out the originally-planned Edit Profile → Save trigger, and Riverpod's non-`.autoDispose` `NotifierProvider` caching meant simply revisiting the Profile screen made no new network call at all.
+
+**Background:** Task 20 needed a way to force a real, in-session `GET /me` call once the access token had naturally expired, without restarting the app (which would just re-run session restoration rather than exercising the interceptor's live-401 path) and without fabricating a 401. Two options were presented to the user: request a WAF allowlist change for `PATCH`, or add a small pull-to-refresh affordance. The user explicitly chose pull-to-refresh.
+
+**Alternatives Considered:**
+- Request the WAF administrators allowlist `PATCH` so the original Edit Profile → Save trigger could be used — offered, not chosen (would have introduced an external dependency/wait on this task's critical path).
+- Add pull-to-refresh to the Profile screen (chosen, user-directed) — a small, self-contained client-side addition with a legitimate product justification on its own merits (profile data can go stale without any refresh affordance at all today), not solely a test scaffold.
+
+**Final Decision:** Implemented as permanent product code: `RefreshIndicator` wraps the loaded-state view, `AlwaysScrollableScrollPhysics` on the inner `ListView` so the pull gesture is always reachable, and a new widget test (`mobile/test/widget/profile_screen_test.dart`) asserting a fling-to-refresh triggers a second `getProfile()` call and the refreshed data renders.
+
+**Reasoning:** Although this change originated from a testing need, it is not test-only scaffolding — no Profile screen anywhere in this codebase previously had any way to refresh server-side profile data without restarting the app, which is a real, independently-justifiable product gap. It stays in the codebase after Task 20 for that reason, not because it happens to have been useful for verification.
+
+**Impact:** Every future session touching the Profile screen should treat pull-to-refresh as permanent product behavior, not diagnostic instrumentation — it is not scheduled for removal. `flutter analyze` clean; full `flutter test` suite (105/105) passing with the new test included.
+
+**Related Files:**
+- `mobile/lib/features/profile/presentation/profile_screen.dart`
+- `mobile/test/widget/profile_screen_test.dart`
+
+**Related Documentation:**
+- [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)
+
+**Git Commit:** `<pending — working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Production Flutter AuthInterceptor E2E Verification session, per explicit user direction
+
+### 2026-09-29 — Production mail transport deferred (`MAIL_MAILER=log`)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (production deployment)
+**Decision Summary:** The production deployment at `10.24.1.22` runs with `MAIL_MAILER=log` — outgoing mail is written to the Laravel log, not delivered — rather than configuring a real SMTP/transactional-mail provider.
+
+**Background:** No real mail-provider credentials (SMTP host, API key for a transactional provider, etc.) were supplied for this deployment, and this task's own instructions explicitly forbade inventing or configuring mail delivery without real details.
+
+**Alternatives Considered:**
+- Configure a real provider using placeholder/invented credentials so the deployment "looks" production-ready — rejected outright: would silently fail in a way that's hard to distinguish from a real outage, and violates the explicit "no falsely production-ready" constraint from the Production Hardening task.
+- Leave `MAIL_MAILER=log` (chosen) — honest about the actual capability of this deployment: email verification and password reset requests succeed at the API level but no email is actually sent.
+
+**Final Decision:** `MAIL_MAILER=log` in production `.env`. Documented as an open follow-up in [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md), not silently left undocumented.
+
+**Reasoning:** An explicitly deferred, documented limitation is safer than a falsely-configured one that could plausibly be mistaken for working mail delivery.
+
+**Impact:** A real end user cannot complete email verification or receive a password-reset email against this deployment today. Does not affect Task 20's own verified scope (register/login/refresh), which does not depend on mail delivery.
+
+**Related Files:**
+- None (environment configuration, not repository code)
+
+**Related Documentation:**
+- [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)
+
+**Git Commit:** N/A (environment-only, not a repository change)
+
+**Author:** Claude (AI Software Engineer), Production Hardening session
+
+### 2026-09-29 — Dedicated production queue worker via a native systemd unit, not Supervisor
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (production deployment)
+**Decision Summary:** The production queue worker (`php83 artisan queue:work redis`) runs under a dedicated systemd unit (`aesthetic-coach-queue-worker.service`, `User=apache`, `Restart=always`) created directly on `10.24.1.22`, rather than Supervisor (used on the separate dev server, per [SERVER_SETUP_REPORT.md](SERVER_SETUP_REPORT.md)) or Docker.
+
+**Background:** This production server is a bare-metal institutional host with systemd already managing every other service on it (Apache, the dedicated `php83-php-fpm` pool, MySQL, Redis) — there was no existing Supervisor installation on this specific server, and introducing a second process-management tool for just this one worker would add an unnecessary dependency.
+
+**Alternatives Considered:**
+- Install Supervisor (matching the dev-server pattern) — rejected: this server already has systemd doing the same job for every other service; adding a second tool for one process is inconsistent with how the rest of this host is run.
+- Run the worker manually/via `nohup` — rejected: no automatic restart on crash or reboot, unacceptable for a queue worker in any environment meant to be reachable, even a verification deployment.
+- A dedicated native systemd unit (chosen) — matches this server's existing convention for every other long-running process, gets `Restart=always` and boot-time start for free, no new tooling.
+
+**Final Decision:** `/etc/systemd/system/aesthetic-coach-queue-worker.service` created, enabled, and confirmed active.
+
+**Reasoning:** Consistency with how this specific host already manages services outweighs matching the dev server's Supervisor convention — the two servers were never claimed to be identically configured, and each should use the process manager already idiomatic to it.
+
+**Impact:** Any future production deployment session on this server should manage the queue worker via `systemctl`, not Supervisor. This is server-specific; it does not set a precedent for how a future dedicated/cloud production environment (per [docs/12-deployment-guide.md](docs/12-deployment-guide.md)) should run its workers.
+
+**Related Files:**
+- None (server-level configuration, not repository code)
+
+**Related Documentation:**
+- [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)
+
+**Git Commit:** N/A (infrastructure-only)
+
+**Author:** Claude (AI Software Engineer), Production Environment Deployment session
+
+### 2026-09-29 — HTTPS via institutional WAF path-based routing, not a dedicated subdomain
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (production deployment / HTTPS)
+**Decision Summary:** Production HTTPS access is served at `https://acrinternal.iitm.ac.in/aesthetic-coach` — a path under an existing institutional domain, TLS-terminated by an institutional WAF (`waf01.iitm.ac.in`) using a real commercial certificate — rather than provisioning a dedicated subdomain/certificate for this project.
+
+**Background:** The user directly asked whether using `https://acrinternal.iitm.ac.in/aesthetic-coach` instead of the plain server IP would resolve the app's HTTPS/cleartext-traffic problem. Investigation confirmed the institutional WAF already terminates TLS with a valid, trusted commercial certificate for that domain and could be configured to forward a path to this server — a materially faster path to real, trusted HTTPS than requesting a new dedicated domain and certificate.
+
+**Alternatives Considered:**
+- Self-signed certificate directly on `10.24.1.22` — rejected: would still require the mobile client to trust an untrusted CA (either bundling it or disabling certificate validation), which is a real security regression, not a genuine HTTPS solution.
+- Request a dedicated subdomain + Let's Encrypt/ACM certificate, per [docs/12-deployment-guide.md § 6](docs/12-deployment-guide.md#6-ssl)'s frozen design — the eventual correct approach for a real production launch, but a separate provisioning request outside this task's scope and timeline.
+- Path-based routing under the existing institutional domain/WAF (chosen, user-approved) — reuses already-trusted, already-terminated TLS with no new certificate request, at the cost of a URL path prefix (`/aesthetic-coach`) instead of a clean subdomain, and inheriting whatever policies the WAF enforces (see the separate `PATCH`/`PUT`/`DELETE` decision above).
+
+**Final Decision:** `/etc/httpd/conf.d/aesthetic-coach-path.conf` (`Alias` + `ProxyPassMatch`) added on `10.24.1.22`, plus a server-side-only `RewriteBase /aesthetic-coach/` fix in the deployed `.htaccess`. Confirmed working end-to-end from the real release-signed Flutter client.
+
+**Reasoning:** Given the user's explicit approval and the goal of getting Task 20 (real E2E verification) unblocked, reusing existing trusted infrastructure was the pragmatic choice — it does not preclude a proper dedicated-domain setup later for an eventual real public launch.
+
+**Impact:** The app's production `API_BASE_URL` for this deployment is `https://acrinternal.iitm.ac.in/aesthetic-coach/api/v1/`, passed via `--dart-define` at build time (see [mobile/lib/core/network/api_config.dart](mobile/lib/core/network/api_config.dart) — mechanism unchanged). Inherits the institutional WAF's method-filtering policy as a real, documented constraint (see the WAF decision entry above). This is explicitly not claimed to be this project's final public production domain.
+
+**Related Files:**
+- None in the git repository (server-level Apache config)
+
+**Related Documentation:**
+- [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)
+- [docs/12-deployment-guide.md § 6 SSL](docs/12-deployment-guide.md#6-ssl) (the frozen target design this deviates from, pragmatically, for now)
+
+**Git Commit:** N/A (infrastructure-only)
+
+**Author:** Claude (AI Software Engineer), per explicit user approval ("yes, proceed")
+
+### 2026-09-29 — Production Android signing identity generated outside git, PKCS12 shared store/key password
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (Android production release signing)
+**Decision Summary:** A dedicated release keystore for this app (`aesthetic-coach-release.jks`) was generated on the local dev machine, stored entirely outside the git repository (`D:\dev\secrets\aesthetic-coach\`), and referenced from `mobile/android/app/build.gradle.kts` via a gitignored `key.properties`. Store and key passwords are the same value, because the modern PKCS12 keystore format `keytool` produces does not support them differing.
+
+**Background:** No release keystore existed anywhere for this app before this session — every prior release build used debug signing (`TODO: Add your own signing config for the release build` in the original `build.gradle.kts`). The user explicitly authorized generating a brand-new dedicated keystore.
+
+**Alternatives Considered:**
+- Continue debug signing for release builds — rejected: explicitly disallowed by this task's own constraints, and debug-signed release builds cannot be the basis for any real distributed release.
+- Commit the keystore or its passwords to the repository (even encrypted) — rejected outright per explicit constraint; secrets of this kind belong outside version control entirely, not in an encrypted-in-repo form.
+- Request separate store/key passwords — not possible: `keytool -genkeypair` against a PKCS12-format keystore (the modern default, JKS being legacy/deprecated) silently ignores a distinct `-keypass` and uses the store password for both; this is a `keytool` constraint, not a choice made here.
+
+**Final Decision:** Keystore generated once, stored outside the repo; `mobile/android/key.properties` (gitignored, confirmed via `git check-ignore -v`) holds `storePassword`/`keyPassword` (identical value)/`keyAlias`/`storeFile`; `build.gradle.kts` conditionally defines a `release` signing config only when that file is present, falling back to debug signing otherwise so the project still builds on any machine without the production keystore.
+
+**Reasoning:** Keeping the keystore and its credentials entirely outside git, with a conditional fallback in the Gradle config, means no machine other than the one holding the keystore can produce a signature-matching release build — the correct security posture for a signing identity that (per Android's own model) can never be rotated once an app is published, while not breaking `flutter run --release` for anyone else on the team.
+
+**Impact:** Every future release build must run on a machine with `mobile/android/key.properties` present and pointing at the real keystore file, or it will silently fall back to (unusable-for-release) debug signing — this fallback is intentional, not a bug, but worth knowing. `applicationId` (`com.aestheticcoach.aesthetic_coach`) and `namespace` are unchanged; no Play Store listing exists yet.
+
+**Related Files:**
+- `mobile/android/app/build.gradle.kts`
+- `mobile/android/key.properties` (gitignored, not tracked)
+
+**Related Documentation:**
+- [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)
+
+**Git Commit:** `<pending — working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Android Production Release Signing session, per explicit user authorization
+
+### 2026-09-29 — Root cause of "Unable to reach the server" (release builds): missing `INTERNET` permission, not the `--dart-define` mechanism
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (staging/production E2E verification)
+**Decision Summary:** `mobile/lib/core/network/api_config.dart`'s `--dart-define=API_BASE_URL=...` mechanism (added in an earlier session) was working correctly all along; the release-build-specific "Unable to reach the server" failures investigated across Tasks 20A/20B/20 had a second, independent root cause — `android.permission.INTERNET` was declared only in the debug-only manifest (for an unrelated reason: the Flutter tool's own hot-reload channel), never in the main manifest that release builds inherit. Fixed by adding the permission to `mobile/android/app/src/main/AndroidManifest.xml`; the `--dart-define` mechanism itself was left unchanged.
+
+**Background:** Every prior debug-build test of this app worked, masking the missing permission, because the debug manifest happened to declare `INTERNET` for a completely unrelated reason. The first release build (once release signing existed) exposed the real gap. Diagnosis initially suspected Android's cleartext-traffic-blocked-by-default behavior for non-debuggable release builds targeting API 28+ — a plausible, investigated, but ultimately incorrect theory; the actual cause was confirmed by direct comparison of `aapt dump permissions` output between debug and release builds, which showed `INTERNET` present in one and absent in the other.
+
+**Alternatives Considered:**
+- Add a Network Security Config permitting cleartext traffic — would have been the fix for the cleartext theory, not this actual bug; not applied, since it wouldn't have fixed anything and would have added an unnecessary, unused config file.
+- Move the `INTERNET` permission's declaration or duplicate it differently — rejected in favor of simply adding it to the main manifest (the correct, minimal fix): every build variant merges the main manifest, so this covers debug and release identically going forward; the debug manifest's own (harmless, narrower-reasoned) declaration was left in place rather than removed, since removing it isn't necessary and touches an unrelated concern (hot-reload).
+
+**Final Decision:** `<uses-permission android:name="android.permission.INTERNET"/>` added to `mobile/android/app/src/main/AndroidManifest.xml`. No change to `api_config.dart`'s dart-define mechanism, dev default, or the fact that no host is ever hardcoded.
+
+**Reasoning:** The two-root-cause structure (an earlier missing-`--dart-define` issue investigated in Tasks 20A/20B, and this independent missing-permission issue found only once a real release build existed) needs to be on record so a future session doesn't re-investigate a supposedly-still-broken `--dart-define` mechanism that was never actually the remaining problem.
+
+**Impact:** Every release build produced before this fix (across this project's entire history) was silently unable to make any network call at all, regardless of how correctly `API_BASE_URL` was set. Any future permission-related "Unable to reach the server" symptom on a *release* build should check `aapt dump permissions` against both build variants before assuming it's a URL/dart-define problem.
+
+**Related Files:**
+- `mobile/android/app/src/main/AndroidManifest.xml`
+
+**Related Documentation:**
+- [mobile/lib/core/network/api_config.dart](mobile/lib/core/network/api_config.dart) (unchanged, confirmed correct)
+- [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)
+
+**Git Commit:** `<pending — working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Task 20A/20B and Production Flutter AuthInterceptor E2E Verification sessions
+
 ### 2026-08-18 — Task 17-19 (mobile auth): continuing to defer riverpod_generator/freezed codegen
 
 **Sprint:** Phase 1 · Sprint 1

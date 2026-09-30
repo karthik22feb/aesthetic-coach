@@ -6,7 +6,7 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 in progress.** The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is now also merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`), locally re-verified (65/65 tests) but not yet checked against a live backend or real device. Next: Task 20 (staging E2E test). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. **Sprint 2 · Task 2** (Flutter Profile screen + Edit Profile sheet) is also merged to `main` (squash-merge of [PR #5](https://github.com/karthik22feb/aesthetic-coach/pull/5), commit `cc2385f`), re-verified post-merge (90/90 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. **Module 3 (User Profile) is now Complete.** **Sprint 2 · Task 3** (basic Settings screen: theme, unit preference) is also merged to `main` (squash-merge of [PR #6](https://github.com/karthik22feb/aesthetic-coach/pull/6), commit `450442b`), re-verified post-merge (102/102 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. None of these three tasks changes Task 20's blocked status. Separately, this project's **first real Android device/emulator testing** (on a local Windows dev machine, not the Linux server, which has no KVM) found and fixed a genuine client-side URL-construction bug: `ApiConfig.baseUrl` lacking a trailing slash caused Dio to silently concatenate relative paths into malformed URLs (e.g. `/api/v1auth/register` instead of `/api/v1/auth/register`), surfacing as a misleading "Unable to reach the server" error on every API call. Fixed and merged to `main` (squash-merge of [PR #7](https://github.com/karthik22feb/aesthetic-coach/pull/7), commit `11da8ea`), re-verified post-merge (104/104 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) and confirmed against the real emulator + local Laravel backend (register/login/`GET /me` all now hit the correct paths). This does not touch Task 20 or staging/real-device *E2E* verification, which remain separately BLOCKED/not started. Separately, **Sprint 2 · Task 4** (`goals` table migration + Eloquent model) is merged to `main` (squash-merge of [PR #8](https://github.com/karthik22feb/aesthetic-coach/pull/8), commit `7c5d12e`), approved by two independent reviewers distinct from the author (the migration-touching review requirement) and re-verified post-merge (`composer validate --strict` clean, Pint clean, a direct Tinker database round-trip against the real local MySQL instance confirmed) — the full Pest suite remains **not verified locally**, blocked by a pre-existing Docker-Compose `mysql`-hostname requirement in `phpunit.xml` that this bare-Windows environment doesn't satisfy (confirmed unrelated to this change: it reproduces identically on unrelated pre-existing tests). Task 4 provides only the migration/model layer; the `POST /goals` endpoint remains Sprint 4 scope, so **Module 4 (AI Onboarding) moves to In Progress**, not Complete. Does not touch or unblock Task 20.
+**Phase 1 · Sprint 1 — Task 20: COMPLETE — VERIFIED SCOPE WITH FOLLOW-UP ITEMS (scope note below); Module 2 (Authentication) now Complete.** A real production deployment (`10.24.1.22`, HTTPS via institutional WAF path routing at `https://acrinternal.iitm.ac.in/aesthetic-coach` — see [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)) was stood up, a dedicated Android release signing keystore was generated, a release-build-only missing `INTERNET` permission bug was found and fixed, and the Dio `AuthInterceptor`'s 401→refresh→retry→success cycle was **runtime-verified** (not just code-reviewed) via direct server-log correlation against that real production backend from the real release-signed Flutter client. Register and login were exercised against the same deployment as part of this verification; email verification (mail is deferred, `MAIL_MAILER=log`) and an explicit logout call were not separately exercised, and the institutional WAF blocks `PATCH`/`PUT`/`DELETE` for this path (a real, documented, WAF-owned infrastructure limitation, not an application bug) — see [PRODUCTION_DEPLOYMENT_REPORT.md § Task 20 — Closure Scope Reconciliation](PRODUCTION_DEPLOYMENT_REPORT.md#task-20--closure-scope-reconciliation) for the precise scope. The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`). Next: Sprint 2, Task 9 (Pest tests: profile update, onboarding goal creation) — see [NEXT_TASK.md](NEXT_TASK.md). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. **Sprint 2 · Task 2** (Flutter Profile screen + Edit Profile sheet) is also merged to `main` (squash-merge of [PR #5](https://github.com/karthik22feb/aesthetic-coach/pull/5), commit `cc2385f`), re-verified post-merge (90/90 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. **Module 3 (User Profile) is now Complete.** **Sprint 2 · Task 3** (basic Settings screen: theme, unit preference) is also merged to `main` (squash-merge of [PR #6](https://github.com/karthik22feb/aesthetic-coach/pull/6), commit `450442b`), re-verified post-merge (102/102 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. None of these three tasks changes Task 20's blocked status. Separately, this project's **first real Android device/emulator testing** (on a local Windows dev machine, not the Linux server, which has no KVM) found and fixed a genuine client-side URL-construction bug: `ApiConfig.baseUrl` lacking a trailing slash caused Dio to silently concatenate relative paths into malformed URLs (e.g. `/api/v1auth/register` instead of `/api/v1/auth/register`), surfacing as a misleading "Unable to reach the server" error on every API call. Fixed and merged to `main` (squash-merge of [PR #7](https://github.com/karthik22feb/aesthetic-coach/pull/7), commit `11da8ea`), re-verified post-merge (104/104 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) and confirmed against the real emulator + local Laravel backend (register/login/`GET /me` all now hit the correct paths). This does not touch Task 20 or staging/real-device *E2E* verification, which remain separately BLOCKED/not started. Separately, **Sprint 2 · Task 4** (`goals` table migration + Eloquent model) is merged to `main` (squash-merge of [PR #8](https://github.com/karthik22feb/aesthetic-coach/pull/8), commit `7c5d12e`), approved by two independent reviewers distinct from the author (the migration-touching review requirement) and re-verified post-merge (`composer validate --strict` clean, Pint clean, a direct Tinker database round-trip against the real local MySQL instance confirmed) — the full Pest suite remains **not verified locally**, blocked by a pre-existing Docker-Compose `mysql`-hostname requirement in `phpunit.xml` that this bare-Windows environment doesn't satisfy (confirmed unrelated to this change: it reproduces identically on unrelated pre-existing tests). Task 4 provides only the migration/model layer; the `POST /goals` endpoint remains Sprint 4 scope, so **Module 4 (AI Onboarding) moves to In Progress**, not Complete. Does not touch or unblock Task 20.
 
 ---
 
@@ -52,6 +52,77 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-09-29 — Task 20: final scope reconciliation (documentation-only)
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (documentation-only closure reconciliation, no technical work)
+**Objective:** Remove any ambiguity between Task 20's original frozen Definition of Done (register → verify email → login → refresh → logout, on staging) and what was actually runtime-verified in production, across every tracking document — without reopening the technical investigation, changing any code, or touching infrastructure.
+
+**Files Changed:**
+- `PRODUCTION_DEPLOYMENT_REPORT.md` — Task 20 section restructured into explicit "What Was Verified" / "What Was Not Separately Verified" / "Why Email Verification Was Not Verified" / "Task 20 Closure Decision" subsections; Remaining Follow-Up Items updated to list email verification and logout explicitly
+- `PROJECT_STATUS.md`, `MASTER_IMPLEMENTATION_PLAN.md`, `IMPLEMENTATION_PROGRESS.md`, `NEXT_TASK.md` — status wording standardized to `Task 20: COMPLETE — VERIFIED SCOPE WITH FOLLOW-UP ITEMS`, with explicit verified/not-separately-verified lists and stale cross-reference anchors fixed
+- `ENGINEERING_DECISION_LOG.md` — new decision entry recording the closure-scope decision itself (see below)
+
+**Database Changes:**
+- None
+
+**API Changes:**
+- None
+
+**Flutter Changes:**
+- None
+
+**Tests Executed:**
+- None run — documentation-only task, no code touched; `git diff --check` clean
+
+**Known Issues:**
+- None newly introduced. Confirmed no source/configuration file changed as a side effect of this pass (`git status --short`/`git diff --name-only` show documentation files only).
+
+**Git Commit:** `<not committed — working tree changes only, delivered for review per this session's explicit instruction not to commit or push>`
+
+**Next Task:** Unchanged — Sprint 2, Task 9 (Pest tests: profile update, onboarding goal creation), per [NEXT_TASK.md](NEXT_TASK.md)
+
+### 2026-09-29 — Task 20: production E2E verification, then Post-Task 20 stabilization & documentation audit
+
+**Sprint:** Phase 1 · Sprint 1
+**Task ID:** Sprint 1, Task 20 (end-to-end integration test) + a follow-on documentation/stabilization pass
+**Objective:** Close out Task 20 by getting a real, HTTPS-reachable backend deployed and directly proving the Flutter `AuthInterceptor`'s 401→refresh→retry cycle against it from the real release-signed client (not mocks, not a fabricated 401) — then audit everything that changed across this multi-session push, distinguish permanent product code from temporary diagnostics, and bring the tracking documents up to date.
+
+**Files Changed:**
+- `mobile/android/app/src/main/AndroidManifest.xml` — added the `INTERNET` permission to the main manifest (previously only in the debug-only manifest for an unrelated reason), fixing every release build's silent inability to make any network call
+- `mobile/android/app/build.gradle.kts` — conditional release signing config, loaded from a new gitignored `mobile/android/key.properties`, falling back to debug signing when absent
+- `mobile/lib/features/profile/presentation/profile_screen.dart` — added pull-to-refresh (`RefreshIndicator` + `AlwaysScrollableScrollPhysics`) so `GET /me` can be re-triggered in-session; permanent product feature, not test-only scaffolding
+- `mobile/test/widget/profile_screen_test.dart` — new test covering the pull-to-refresh behavior
+- `PRODUCTION_DEPLOYMENT_REPORT.md` — new, documents the real production deployment, HTTPS/WAF architecture, and Task 20's actual verified scope
+- `ENGINEERING_DECISION_LOG.md`, `IMPLEMENTATION_PROGRESS.md`, `MASTER_IMPLEMENTATION_PLAN.md`, `PROJECT_STATUS.md`, `NEXT_TASK.md` — updated to reflect the above (this entry)
+
+**Infrastructure changes (not in this git repository):** a production deployment on `10.24.1.22` (`/var/www/internalacr/aesthetic-coach`), HTTPS via institutional-WAF path routing at `https://acrinternal.iitm.ac.in/aesthetic-coach`, a dedicated `php83-php-fpm` pool and `aesthetic-coach-queue-worker.service` systemd unit, and a dedicated Android release-signing keystore outside the repo. Full detail in [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md).
+
+**Database Changes:**
+- None
+
+**API Changes:**
+- None (no backend code touched)
+
+**Flutter Changes:**
+- Profile screen: pull-to-refresh (see above)
+
+**Tests Executed:**
+- `flutter analyze`: clean, no issues
+- `flutter test`: 105/105 passing (full suite, including the new pull-to-refresh test)
+- Backend Pest tests: not run — no backend code changed, and no local PHP/Docker toolchain is available in this Windows environment to run them
+- `git diff --check`: clean (no whitespace/conflict-marker issues)
+- Repository-wide search for leftover diagnostic markers (`DIO-DIAG`, `REFRESH-DIAG`, `TEMP`, `FIXME`, etc.): no matches in application code — all diagnostic instrumentation from earlier Task 20A/20B sessions was already fully reverted
+
+**Known Issues:**
+- Institutional WAF blocks `PATCH`/`PUT`/`DELETE` for the HTTPS path — real, present-tense limitation, WAF-administrator-owned, no application workaround (see decision log)
+- Mail is deferred (`MAIL_MAILER=log`) — email verification/password reset don't deliver real email in this deployment
+- Task 20's literal frozen definition (register→verify→login→refresh→logout) is only partially covered: register/login/refresh are runtime-verified; email verification and explicit logout were not separately exercised in this pass
+
+**Git Commit:** `<not committed — working tree changes only, delivered for review per this session's explicit instruction not to commit or push>`
+
+**Next Task:** Sprint 2, Task 9 — Pest tests: profile update, onboarding goal creation (see [NEXT_TASK.md](NEXT_TASK.md))
 
 ### 2026-08-28 — Sprint 2 Task 4: `goals` table migration and model
 

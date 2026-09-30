@@ -8,36 +8,42 @@
 
 ## Task
 
-**Task 20 — end-to-end staging integration test.**
+**Sprint 2, Task 9 — Pest tests: profile update, onboarding goal creation.**
 
-Tasks 17, 18, and 19 (Flutter Login/Signup screens, Dio `AuthInterceptor` with transparent refresh, secure token storage) are **merged to `main`** as of commit `f7a2580` (squash-merge of PR [#2](https://github.com/karthik22feb/aesthetic-coach/pull/2)). This is implemented and locally verified (unit/widget tests, `flutter analyze`/`dart format`) — **not** yet verified against a live backend or a real device/emulator. **Only Task 20 remains** to close out Module 2 (Authentication).
+Module 2 (Authentication) is now **Complete** — Task 20 (end-to-end verification) landed against a real production deployment; see [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md) and [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md) for the full scope of what was verified. Sprint 2 Tasks 1–4 are already merged to `main` ahead of strict roadmap order (Module 3, User Profile, is Complete). [TASK_BREAKDOWN.md § Sprint 2](docs/TASK_BREAKDOWN.md#sprint-2--user-profile--ai-onboarding) lists Task 9 ("Pest tests: profile update, onboarding goal creation") as depending only on Tasks 1 and 4, both already done — it's the smallest fully-unblocked item remaining in Sprint 2.
+
+Task 1's profile-update endpoint already has substantial existing Pest coverage (`ProfileTest.php`, referenced in earlier sessions) — this task's real remaining work is auditing that coverage against [Testing Strategy § 5](docs/10-testing-strategy.md#5-api-testing)'s checklist (happy path, validation, auth, cross-user isolation, idempotency) and adding tests for the `goals` table/model from Task 4, which has no dedicated test coverage yet (Task 4 was verified only via a manual Tinker round-trip, not an automated test).
+
+**Alternative candidate, not chosen:** Sprint 2 Task 5 (onboarding flow screens: profile basics, goal selection, experience level) is also unblocked (depends only on Task 2, done) and is a larger, feature-shaped piece of work — a reasonable next choice if test-coverage work is deprioritized in favor of feature velocity, but Task 9 was picked here as the smaller, lower-risk item that closes an existing gap rather than opening new surface area.
+
+**Not this task — tracked separately:** Task 20's two follow-up verification items (production email verification, explicit production logout verification — see [PRODUCTION_DEPLOYMENT_REPORT.md § Remaining Follow-Up Items](PRODUCTION_DEPLOYMENT_REPORT.md#remaining-follow-up-items)) are not folded into Task 9's scope above; they remain distinct, separately trackable items governed by their own prerequisites (a real mail transport, for email verification) rather than the existing Sprint 2 task sequence.
 
 ## Context
 
-- Module: [Authentication (Module 2)](docs/IMPLEMENTATION_ORDER.md#2-authentication) — backend complete, Flutter foundation merged, Flutter auth client (Login/Signup, interceptor, secure storage) merged; only the staging E2E exit criterion remains
-- Sprint: [Phase 1 · Sprint 1 — Infrastructure, Authentication & Project Setup](docs/16-development-roadmap.md#phase-1--sprint-1--infrastructure-authentication--project-setup)
-- **Environment note (unchanged from prior sessions):** `export HOME=/var/flutter-home` before any `flutter`/`dart` command on this server. The `/home` partition capacity issue that originally forced this is now resolved (~50GB free as of 2026-08-18), but the Flutter SDK's own cache still lives under `/var/flutter-home` from when it was installed there — switching back to the real `$HOME` would mean a ~2.3GB re-download for no functional benefit, so the override stays in place until a dedicated cleanup session decides otherwise.
-- Android SDK, Chrome, and the Linux desktop build toolchain (`clang`/`cmake`/`ninja`/`gtk3`) are still not installed — `flutter build`/`flutter run` remain unverified in this environment. This session's login/signup/auth-flow work was verified via `flutter analyze` + `flutter test` (65/65 passing) only, **not** against a real device/emulator, and **not** against the live backend (Docker wasn't started — server had only ~822Mi free / swap already 70% utilized at decision time; starting the full Laravel+MySQL+Redis stack was judged unsafe).
+- Module: Sprint 2 has no single dedicated module row of its own in [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORDER.md)'s 16-module list beyond Module 3 (User Profile, already Complete) and Module 4 (AI Onboarding, In Progress) — Task 9 contributes test coverage to both.
+- Sprint: [Phase 1 · Sprint 2 — User Profile & AI Onboarding](docs/16-development-roadmap.md#phase-1--sprint-2--user-profile--ai-onboarding)
+- **Environment note:** this session ran on a bare Windows machine with no local PHP/Composer/Docker at all — Pest tests could not be executed locally here. Prior sessions ran backend work on a separate Linux dev server (`10.24.8.219`, `/var/www/html/aesthetic-coach`, `HOME=/var/flutter-home` override for Flutter/Dart only — irrelevant to PHP) where PHP/Composer/MySQL/Redis/Docker are already installed and validated (see [SERVER_SETUP_REPORT.md](SERVER_SETUP_REPORT.md)). That dev server (not the separate `10.24.1.22` production server from Task 20) is almost certainly still the right place to run this task's Pest suite.
 
 ## Primary Documents
 
-- [Authentication feature § Acceptance Criteria](docs/features/authentication.md#acceptance-criteria) — the exact end-to-end scenario Task 20 needs to prove
-- [API Examples — Auth](docs/api-examples/auth.md)
-- Task 20's own definition: [TASK_BREAKDOWN.md § Sprint 1, Task 20](docs/TASK_BREAKDOWN.md) — "register → verify → login → refresh → logout, on staging"
+- [Testing Strategy § 5 API Testing](docs/10-testing-strategy.md#5-api-testing) — the checklist every Feature test suite needs to satisfy
+- [Profile feature](docs/features/profile.md) and [Database Design § 3.5](docs/04-database-design.md#35-habits--goals) (`goals` table)
+- Existing `backend/tests/Feature/Profile/ProfileTest.php` (audit its current coverage first — don't duplicate what's already there)
 
-## Definition of Done (for Task 20, once started)
+## Definition of Done (for Task 9, once started)
 
-- [ ] A real staging environment exists and is reachable (this itself may be a blocker — no staging environment has been provisioned yet per Module 1's own Definition of Done; check [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md) before assuming it's ready)
-- [ ] register → verify email → login → refresh → logout exercised end-to-end against that real backend, from the real Flutter client (not mocks)
-- [ ] Confirms the mobile client's `AuthInterceptor` genuinely handles a real 401/refresh cycle against the real backend, not just the fake-adapter unit tests from Tasks 17–19
+- [ ] Existing profile-update Pest coverage audited against [Testing Strategy § 5](docs/10-testing-strategy.md#5-api-testing)'s checklist (happy path, validation, auth, cross-user isolation, idempotency); gaps filled
+- [ ] New Pest Feature tests added for the `goals` table/model (Task 4) — at minimum, model creation, the documented enum casts, and the `user()`/`goals()` relations
+- [ ] Full Pest suite run and passing on the Linux dev server (or another environment with a working `mysql` Docker hostname / real MySQL connection)
+- [ ] `composer validate --strict` and Pint clean
 
 ## After Completing This Task
 
 1. Confirm the Definition of Done above is fully met — see [AI_DEVELOPMENT_GUIDE.md § Definition of Done](docs/AI_DEVELOPMENT_GUIDE.md#definition-of-done-before-moving-to-the-next-task).
-2. Update [MASTER_IMPLEMENTATION_PLAN.md](MASTER_IMPLEMENTATION_PLAN.md)'s Sprint Tracker / Module Progress — Module 2 (Authentication) can finally move to Complete once Task 20 lands.
-3. Replace this file's **Task**, **Context**, **Primary Documents**, and **Definition of Done** with the *next* task — Module 3, User Profile ([TASK_BREAKDOWN.md § Sprint 2](docs/TASK_BREAKDOWN.md)).
+2. Update [MASTER_IMPLEMENTATION_PLAN.md](MASTER_IMPLEMENTATION_PLAN.md)'s Sprint Tracker / Module Progress and [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md).
+3. Replace this file's **Task**, **Context**, **Primary Documents**, and **Definition of Done** with the next task (Sprint 2 Task 5, onboarding flow screens, or the next smallest unblocked item — check [MODULE_DEPENDENCIES.md](docs/MODULE_DEPENDENCIES.md)).
 4. Update the **Last updated** line below.
 
 ---
 
-**Last updated:** 2026-08-18 · **Session:** Mobile Authentication (Tasks 17–19 combined) merged · **Status:** Login/Signup screens, Dio `AuthInterceptor` (single-flight transparent refresh), secure refresh-token storage, and the full auth state/routing integration merged to `main` (`f7a2580`, squash-merge of PR #2) and re-verified post-merge (65/65 tests passing, `flutter analyze`/`dart format` clean). Not verified against a live backend or real device — only Task 20 (staging E2E) not started.
+**Last updated:** 2026-09-29 · **Session:** Task 20 production E2E verification, then Post-Task 20 Stabilization, Documentation & Production Readiness Audit · **Status:** Task 20 complete against a real production deployment (see [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)); Module 2 (Authentication) moves to Complete. This file's task replaced per this session's own Step 3 above — Sprint 2, Task 9 is next.
