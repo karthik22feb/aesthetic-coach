@@ -1,5 +1,8 @@
 <?php
 
+use App\Modules\Auth\Enums\UnitPreference;
+use App\Modules\Auth\Models\User;
+
 test('an authenticated user can view their own profile with default values', function () {
     $register = $this->postJson('/api/v1/auth/register', validRegistrationPayload())->json('data');
 
@@ -164,4 +167,50 @@ test('an empty name is rejected', function () {
 
     $response->assertStatus(422)->assertJsonPath('error.code', 'validation_failed');
     expect($response->json('error.details'))->toHaveKey('name');
+});
+
+test("updating one user's profile does not affect another user's profile (cross-user isolation)", function () {
+    // /me has no ID in the URL -- it is scoped entirely by the bearer
+    // token's resolved user (routes.php), so the IDOR-style check this
+    // project's other resource-scoped endpoints run as "user A cannot
+    // access user B's resource by ID" doesn't literally apply here. The
+    // equivalent real risk for a token-scoped singleton resource is a
+    // bug that resolves or writes the wrong user row -- this asserts
+    // user B's row is byte-for-byte unaffected by user A's update.
+    //
+    // Deliberately verified via a direct User query, not a second
+    // authenticated request as user B: Laravel's `Auth::viaRequest()`
+    // guard (RequestGuard::user()) caches the resolved user on the guard
+    // instance, and that guard is cached per-name on the shared AuthManager
+    // singleton -- which is not rebuilt between requests inside a single
+    // Pest test's HTTP calls. A second `withHeader(...)->getJson(...)`
+    // call here would silently resolve to the *first* request's cached
+    // user, not user B's, regardless of which bearer token is sent. This
+    // is a test-harness quirk, not a production behavior (every real
+    // HTTP request gets a fresh container) -- see SessionTest.php's own
+    // IDOR test for the same already-established pattern of verifying
+    // the other user's state directly rather than via a second
+    // authenticated call.
+    $userA = $this->postJson('/api/v1/auth/register', validRegistrationPayload())->json('data');
+    $this->postJson('/api/v1/auth/register', validRegistrationPayload([
+        'email' => 'imaan@example.com',
+    ]))->assertCreated();
+
+    $this->withHeader('Authorization', 'Bearer '.$userA['accessToken'])
+        ->patchJson('/api/v1/me', [
+            'timezone' => 'Asia/Kolkata',
+            'unitPreference' => 'imperial',
+            'dietaryRestrictions' => ['vegan'],
+        ])
+        ->assertOk();
+
+    $userB = User::where('email', 'imaan@example.com')->first();
+
+    expect($userB->timezone)->toBe('UTC');
+    expect($userB->unit_preference)->toBe(UnitPreference::Metric);
+    // The raw model attribute is null until a value is ever set -- the API
+    // response's `[]` default (asserted elsewhere in this file) is a
+    // UserResource-layer normalization, not the underlying column/cast
+    // value, which this direct-model query reads unmediated.
+    expect($userB->dietary_restrictions)->toBeNull();
 });
