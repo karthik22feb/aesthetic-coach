@@ -50,6 +50,70 @@ Copy this template for every new entry:
 
 ## Entries
 
+### 2026-10-07 — Onboarding goal creation backed by a mock `GoalsApiClient`, not the real `POST /goals`
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 5 (Onboarding flow screens)
+**Decision Summary:** The Goal Selection step's goal-creation call is implemented against a `GoalsApiClient` interface with two implementations: `GoalsApi` (real, written against the documented `POST /goals` contract, not currently wired up) and `MockGoalsApi` (a client-side stand-in, currently bound in `core/di/goals_providers.dart`). `MockGoalsApi` is deliberately deployed now because the real endpoint does not exist yet.
+
+**Background:** docs/features/onboarding.md's APIs section documents the Goal Selection step as calling `POST /goals`, but that endpoint has never been built -- Sprint 2 Task 4 shipped only the `goals` migration and Eloquent model (backend/app/Modules/Goals/{Models,Enums}/*), with the full CRUD endpoint explicitly deferred to Sprint 4 per docs/TASK_BREAKDOWN.md's own note on that task. Nothing in the roadmap authorizes pulling that endpoint forward into Sprint 2 -- Task 4's scope note is explicit that it doesn't, and no later document revises that. This task's own instructions were to resolve the gap via "the project's approved mocked-response approach unless the existing roadmap clearly authorizes pulling the endpoint forward" -- the roadmap does not, so the mock path was the one actually available.
+
+**Alternatives Considered:**
+- Build a real `POST /goals` endpoint now, ahead of Sprint 4 -- rejected: the roadmap explicitly scopes that work to Sprint 4, and this task's own instructions require not doing this unless the roadmap "clearly authorizes" it, which it does not. Pulling backend work forward silently would also reopen the exact kind of unauthorized scope expansion this project's conventions already warn against.
+- Have the Goal Selection step silently succeed in the UI without calling anything -- rejected: F-ONB-02 requires every user to end onboarding with a real seeded `goals` row (and the skip-default edge case specifically describes seeding one), so a true no-op would misrepresent what happened and leave nothing for a later session to find or correct.
+- A mock implementation behind the same interface the real endpoint will eventually satisfy (chosen) -- directly mirrors this project's own established pattern for exactly this situation, docs/10-testing-strategy.md section 5's `FakeClaudeProvider implementing AiProviderInterface` (a fake behind the real interface, not a parallel code path) for AI endpoints that also aren't live yet.
+
+**Final Decision:** `GoalsApiClient` (features/onboarding/data/goals_api.dart) is implemented twice: `GoalsApi` (real `POST /goals` call, written to the documented contract, ready to use) and `MockGoalsApi` (no network call, generates a client-side-only id, otherwise behaves identically). `core/di/goals_providers.dart` binds `MockGoalsApi` today; switching to the real backend once it ships is a one-line change in that file (swap the bound implementation), with no change needed in `GoalsRepository`, `OnboardingNotifier`, or any screen -- all of them depend on the interface, never on which implementation is wired up.
+
+**Reasoning:** This keeps the onboarding flow fully functional and fully tested today without inventing unauthorized backend scope, and makes the eventual real-endpoint cutover a deliberately small, low-risk change rather than a rewrite.
+
+**Impact:** Every goal a user "creates" during onboarding today is **not actually persisted to the real backend** -- it exists only as a `MockGoalsApi`-generated in-memory id for the duration of that app session. This is a real, user-facing limitation (not just an internal implementation detail) until Sprint 4's real endpoint is wired up, and should be called out explicitly if onboarding is ever demoed or tested against a real account expecting the goal to actually appear server-side later. Any future session wiring up the real `POST /goals` endpoint should start from `GoalsApi` (already written) and `core/di/goals_providers.dart` (the one line to change), not re-derive this from scratch.
+
+**Related Files:**
+- `mobile/lib/features/onboarding/data/goals_api.dart`
+- `mobile/lib/core/di/goals_providers.dart`
+- `mobile/lib/features/onboarding/data/goals_repository.dart`
+
+**Related Documentation:**
+- [docs/features/onboarding.md § APIs](docs/features/onboarding.md#apis)
+- [docs/TASK_BREAKDOWN.md § Sprint 2](docs/TASK_BREAKDOWN.md#sprint-2--user-profile--ai-onboarding) (Task 4's scope note)
+- [docs/10-testing-strategy.md § 5](docs/10-testing-strategy.md#5-api-testing) (the `FakeClaudeProvider` precedent this mirrors)
+
+**Git Commit:** `<pending -- working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Sprint 2 Task 5 implementation session
+
+### 2026-10-07 — Onboarding entry trigger is session-only; full cross-restart resume deferred
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 5 (Onboarding flow screens)
+**Decision Summary:** A user enters Onboarding only immediately after a fresh `register()` call in the current app session (`AuthState.justRegistered`, read by router.dart's redirect guard). This flag is in-memory only and is never persisted -- an app restart mid-onboarding lands the user on Home, not back in Onboarding, even if they hadn't finished.
+
+**Background:** docs/features/onboarding.md's Edge Cases say a user who backgrounds the app mid-onboarding should resume "at the last completed step on relaunch," with progress persisted "server-side via the same `PATCH /me`/`POST /goals` calls, not a separate onboarding-state table." That description implicitly assumes some way to tell, on a later app launch, whether a given user still needs onboarding -- but no such signal exists anywhere in the documented API: there is no `GET /goals` (so goal existence can't be checked), and no onboarding-completion field on `/me` or anywhere else.
+
+**Alternatives Considered:**
+- Add a new field (e.g. an `onboardingCompleted` flag on `/me`, or a local `shared_preferences` marker) to make this resumable -- rejected without raising it first: this project's own established convention (see the 2026-08-13 Email Verification Contract entry in this log) is to stop and report a genuine, consistent documentation gap rather than silently inventing a new backend contract or a parallel client-side state mechanism the backend doesn't know about.
+- Infer onboarding status from existing data (e.g., "has the user ever set a non-default timezone") -- rejected: unreliable (a user legitimately choosing the default value is indistinguishable from never having onboarded) and would be guessing at a contract, not implementing one.
+- Trigger Onboarding only on a fresh, same-session registration, and explicitly flag full cross-restart resume as not yet implemented (chosen) -- the only option that adds no invented contract, reuses existing session-lifetime state (`AuthState`, already rebuilt fresh on every cold start), and is trivially extensible later once a real signal exists.
+
+**Final Decision:** `AuthState.justRegistered` is set `true` only by `AuthNotifier.register()`'s success path, defaults `false` everywhere else (login, session restore, initial state), and is cleared by `AuthNotifier.clearJustRegistered()` once the Experience Level step's Finish action runs. Fully session-scoped; survives in-app navigation but not a process restart.
+
+**Reasoning:** Shipping a flow that works correctly for the common case (a user completes onboarding in one sitting, which the NFR in docs/features/onboarding.md itself targets at "< 90 seconds median") without inventing scope is preferable to either blocking this task on a documentation gap or quietly building a parallel, undocumented persistence mechanism.
+
+**Impact:** A user who closes the app before finishing onboarding currently lands on Home on their next launch, with onboarding never revisited -- a real, user-facing gap, not just an internal one. This should be resolved once there is a documented way to determine onboarding completion server-side (most naturally, once Sprint 4's real `POST /goals` ships alongside some way to read it back, or a dedicated decision is made to add an explicit completion flag). Flagged here and in this session's report rather than left to be rediscovered.
+
+**Related Files:**
+- `mobile/lib/features/auth/application/auth_state.dart`
+- `mobile/lib/features/auth/application/auth_notifier.dart`
+- `mobile/lib/app/router.dart`
+
+**Related Documentation:**
+- [docs/features/onboarding.md § Edge Cases](docs/features/onboarding.md#edge-cases)
+
+**Git Commit:** `<pending -- working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Sprint 2 Task 5 implementation session
+
 ### 2026-09-29 — Task 20 Closure Scope — Verified Core Authentication With Explicit Follow-Up Items
 
 **Sprint:** Phase 1 · Sprint 1

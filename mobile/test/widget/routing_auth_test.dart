@@ -2,6 +2,7 @@ import 'package:aesthetic_coach/app/app.dart';
 import 'package:aesthetic_coach/app/router.dart';
 import 'package:aesthetic_coach/core/di/network_providers.dart';
 import 'package:aesthetic_coach/core/error/failure.dart';
+import 'package:aesthetic_coach/features/auth/application/auth_notifier.dart';
 import 'package:aesthetic_coach/features/auth/data/auth_repository.dart';
 import 'package:aesthetic_coach/features/auth/data/models/auth_user.dart';
 import 'package:flutter/material.dart';
@@ -109,7 +110,7 @@ void main() {
     });
 
     testWidgets(
-      'a successful registration navigates from Signup into the app shell',
+      'a successful registration navigates from Signup into Onboarding, not the app shell',
       (tester) async {
         final fake = _FakeAuthRepository()
           ..refreshError = const AuthFailure(message: 'No session to restore.');
@@ -139,7 +140,58 @@ void main() {
         await tester.tap(find.byKey(const Key('signup_submit_button')));
         await tester.pumpAndSettle();
 
-        expect(find.byKey(const Key('home_screen_content')), findsOneWidget);
+        // Sprint 2, Task 5: a fresh registration lands on Onboarding
+        // (per signup_screen.dart's documented destination), not Home.
+        expect(
+          find.byKey(const Key('onboarding_progress_indicator')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('home_screen_content')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a freshly registered user cannot be redirected away from Onboarding to the app shell',
+      (tester) async {
+        final fake = _FakeAuthRepository()
+          ..refreshError = const AuthFailure(message: 'No session to restore.');
+        final container = ProviderContainer(
+          overrides: [authRepositoryProvider.overrideWithValue(fake)],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const AestheticCoachApp(),
+          ),
+        );
+        await tester.pumpAndSettle(); // resolves to Login
+
+        await container
+            .read(authNotifierProvider.notifier)
+            .register(
+              name: 'Priya Shah',
+              email: 'priya@example.com',
+              password: 'correct-horse-battery1',
+            );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const Key('onboarding_progress_indicator')),
+          findsOneWidget,
+        );
+
+        // Attempting to jump straight to /home mid-onboarding is bounced
+        // back -- the redirect guard treats `justRegistered` the same
+        // way it already treats an unresolved session on Splash.
+        container.read(routerProvider).go('/home');
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('onboarding_progress_indicator')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('home_screen_content')), findsNothing);
       },
     );
 

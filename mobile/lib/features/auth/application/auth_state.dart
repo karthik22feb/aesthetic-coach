@@ -33,13 +33,30 @@ enum AuthStatus {
 }
 
 class AuthState {
-  const AuthState({required this.status, this.user, this.failure});
+  const AuthState({
+    required this.status,
+    this.user,
+    this.failure,
+    this.justRegistered = false,
+  });
 
   static const initial = AuthState(status: AuthStatus.initializing);
 
   final AuthStatus status;
   final AuthUser? user;
   final Failure? failure;
+
+  /// True only immediately after a successful [AuthNotifier.register]
+  /// call in *this* app session -- never set by login or session
+  /// restore. The router (router.dart) reads this to send a freshly
+  /// registered user into Onboarding (Sprint 2, Task 5) instead of
+  /// straight to the app shell, per signup_screen.dart's documented
+  /// destination. Deliberately in-memory only, not persisted: there is
+  /// no documented server-side signal for "has this user completed
+  /// onboarding" (no `GET /goals`, no onboarding-completion flag on
+  /// `/me`), so this cannot and does not survive an app restart -- see
+  /// OnboardingFlowScreen's docblock for the follow-up this implies.
+  final bool justRegistered;
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
 
@@ -48,11 +65,13 @@ class AuthState {
     AuthUser? user,
     Failure? failure,
     bool clearFailure = false,
+    bool? justRegistered,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
       failure: clearFailure ? null : (failure ?? this.failure),
+      justRegistered: justRegistered ?? this.justRegistered,
     );
   }
 
@@ -61,15 +80,17 @@ class AuthState {
       other is AuthState &&
       other.status == status &&
       other.user == user &&
-      other.failure == failure;
+      other.failure == failure &&
+      other.justRegistered == justRegistered;
 
   @override
-  int get hashCode => Object.hash(status, user, failure);
+  int get hashCode => Object.hash(status, user, failure, justRegistered);
 
   /// Deliberately prints every field -- safe to do since neither
   /// [AuthUser] nor any [Failure] subtype ever carries a raw token (see
   /// test/unit/auth_security_test.dart's dedicated check for this).
   @override
   String toString() =>
-      'AuthState(status: $status, user: $user, failure: $failure)';
+      'AuthState(status: $status, user: $user, failure: $failure, '
+      'justRegistered: $justRegistered)';
 }

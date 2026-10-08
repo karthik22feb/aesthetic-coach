@@ -8,6 +8,7 @@ import '../features/auth/presentation/signup_screen.dart';
 import '../features/coach/presentation/coach_screen.dart';
 import '../features/home/presentation/home_screen.dart';
 import '../features/nutrition/presentation/nutrition_screen.dart';
+import '../features/onboarding/presentation/onboarding_flow_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/progress/presentation/progress_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
@@ -39,6 +40,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final target = state.matchedLocation;
       final goingToSplash = target == '/splash';
       final goingToAuthScreen = target == '/login' || target == '/signup';
+      final goingToOnboarding = target == '/onboarding';
 
       // Session restoration hasn't resolved yet -- keep the user on
       // Splash regardless of what they were originally navigating to
@@ -52,10 +54,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         return goingToAuthScreen ? null : '/login';
       }
 
-      // Authenticated: Splash/Login/Signup are no longer valid
-      // destinations -- everything else (the app shell and its tabs) is
-      // allowed through unchanged.
-      if (goingToSplash || goingToAuthScreen) {
+      // A fresh registration (this session only -- see
+      // AuthState.justRegistered's docblock) is sent into Onboarding
+      // (Sprint 2, Task 5) instead of the app shell, matching
+      // signup_screen.dart's documented destination. A login or a
+      // restored session never has this flag set, so this never
+      // re-triggers onboarding for a returning user.
+      if (authState.justRegistered) {
+        return goingToOnboarding ? null : '/onboarding';
+      }
+
+      // Authenticated and not mid-onboarding: Splash/Login/Signup/
+      // Onboarding are no longer valid destinations -- everything else
+      // (the app shell and its tabs) is allowed through unchanged.
+      if (goingToSplash || goingToAuthScreen || goingToOnboarding) {
         return '/home';
       }
 
@@ -70,6 +82,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/signup',
         builder: (context, state) => const SignupScreen(),
+      ),
+      // A single route for the whole onboarding flow (Sprint 2, Task 5)
+      // -- not a shell branch (it's not one of the 5 bottom-nav tabs)
+      // and not split into per-step sub-routes, matching
+      // docs/features/onboarding.md's Screen List ("a single onboarding
+      // route, not separate bottom-nav destinations"). Only reachable
+      // via the redirect guard above (AuthState.justRegistered); never
+      // linked to directly from elsewhere in the app.
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingFlowScreen(),
       ),
       // Top-level (not a shell branch) since Profile isn't one of the 5
       // bottom-nav tabs -- pushed from Home via context.push, so it gets

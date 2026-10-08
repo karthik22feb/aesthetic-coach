@@ -91,10 +91,23 @@ class AuthNotifier extends Notifier<AuthState> {
       final user = await ref
           .read(authRepositoryProvider)
           .register(name: name, email: email, password: password);
-      state = AuthState(status: AuthStatus.authenticated, user: user);
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: user,
+        justRegistered: true,
+      );
     } on Failure catch (failure) {
       state = AuthState(status: AuthStatus.unauthenticated, failure: failure);
     }
+  }
+
+  /// Invoked once Onboarding (Sprint 2, Task 5) finishes or is exited,
+  /// so the router's redirect guard stops sending this session back into
+  /// Onboarding -- see [AuthState.justRegistered]'s docblock for why this
+  /// is in-memory only and does not persist across an app restart.
+  void clearJustRegistered() {
+    if (!state.justRegistered) return;
+    state = state.copyWith(justRegistered: false);
   }
 
   /// Always ends in `unauthenticated`, even if the server call inside

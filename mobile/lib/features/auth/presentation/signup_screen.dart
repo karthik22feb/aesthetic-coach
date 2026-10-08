@@ -15,10 +15,11 @@ final _passwordHasDigit = RegExp('[0-9]');
 /// chars, >=1 letter, >=1 digit) as a client-side UX hint -- the server
 /// remains authoritative, per that screen's Validation section.
 ///
-/// Documented destination on success is Onboarding (Module 4), which
-/// does not exist yet -- this screen relies on the same router redirect
-/// as Login, which currently sends every authenticated user to the app
-/// shell (Home). See NEXT_TASK.md for this gap.
+/// On success, the router's redirect guard (app/router.dart) sends the
+/// user into Onboarding (Sprint 2, Task 5), not straight to the app
+/// shell -- this screen does not navigate directly; it relies entirely
+/// on that guard reacting to `AuthState.justRegistered`, same as it
+/// already did for Login's plain `/home` redirect.
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
