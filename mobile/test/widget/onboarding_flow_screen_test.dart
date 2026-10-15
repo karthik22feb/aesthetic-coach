@@ -1,4 +1,5 @@
 import 'package:aesthetic_coach/app/app.dart';
+import 'package:aesthetic_coach/core/di/feature_flags.dart';
 import 'package:aesthetic_coach/core/di/goals_providers.dart';
 import 'package:aesthetic_coach/core/di/network_providers.dart';
 import 'package:aesthetic_coach/core/di/profile_providers.dart';
@@ -20,6 +21,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// happens *after* registration (the onboarding flow itself), not the
 /// signup form, which signup_screen_test.dart already covers.
 class _FakeAuthRepository implements AuthRepositoryContract {
+  /// Controls what `register()` returns -- the Meet Your Coach step's
+  /// verification-required branch needs this settable per test.
+  bool registerEmailVerified = true;
+
   @override
   Future<void> refresh() async =>
       throw const AuthFailure(message: 'No session to restore.');
@@ -40,7 +45,12 @@ class _FakeAuthRepository implements AuthRepositoryContract {
     required String name,
     required String email,
     required String password,
-  }) async => AuthUser(id: '1', name: name, email: email, emailVerified: true);
+  }) async => AuthUser(
+    id: '1',
+    name: name,
+    email: email,
+    emailVerified: registerEmailVerified,
+  );
 
   @override
   Future<void> logout() async {}
@@ -89,14 +99,20 @@ class _FakeGoalsRepository implements GoalsRepositoryContract {
 }
 
 ProviderContainer _buildContainer({
+  required _FakeAuthRepository authRepository,
   required _FakeProfileRepository profileRepository,
   required _FakeGoalsRepository goalsRepository,
+  bool? aiOnboardingGenerationEnabled,
 }) {
   final container = ProviderContainer(
     overrides: [
-      authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+      authRepositoryProvider.overrideWithValue(authRepository),
       profileRepositoryProvider.overrideWithValue(profileRepository),
       goalsRepositoryProvider.overrideWithValue(goalsRepository),
+      if (aiOnboardingGenerationEnabled != null)
+        aiOnboardingGenerationEnabledProvider.overrideWithValue(
+          aiOnboardingGenerationEnabled,
+        ),
     ],
   );
   return container;
@@ -124,16 +140,49 @@ Future<void> _registerAndReachOnboarding(
   await tester.pumpAndSettle();
 }
 
+/// Drives through steps 1-3 (profile basics, goal selection via Skip,
+/// experience level) with their default/minimal inputs, landing on the
+/// Meet Your Coach step -- used by tests that only care about that
+/// step's own behavior.
+Future<void> _advanceToMeetYourCoach(
+  WidgetTester tester,
+  ProviderContainer container,
+) async {
+  await _registerAndReachOnboarding(tester, container);
+
+  await tester.tap(
+    find.byKey(const Key('onboarding_profile_basics_continue_button')),
+  );
+  await tester.pumpAndSettle();
+
+  await tester.tap(
+    find.byKey(const Key('onboarding_goal_selection_skip_button')),
+  );
+  await tester.pumpAndSettle();
+
+  await tester.tap(
+    find.byKey(const Key('onboarding_experience_option_beginner')),
+  );
+  await tester.pump();
+  await tester.tap(
+    find.byKey(const Key('onboarding_experience_level_continue_button')),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('OnboardingFlowScreen', () {
+    late _FakeAuthRepository fakeAuthRepository;
     late _FakeProfileRepository fakeProfileRepository;
     late _FakeGoalsRepository fakeGoalsRepository;
     late ProviderContainer container;
 
     setUp(() {
+      fakeAuthRepository = _FakeAuthRepository();
       fakeProfileRepository = _FakeProfileRepository();
       fakeGoalsRepository = _FakeGoalsRepository();
       container = _buildContainer(
+        authRepository: fakeAuthRepository,
         profileRepository: fakeProfileRepository,
         goalsRepository: fakeGoalsRepository,
       );
@@ -186,7 +235,7 @@ void main() {
         expect(fakeGoalsRepository.lastCreatePayload?.type, GoalType.strength);
         expect(fakeGoalsRepository.createGoalCallCount, 1);
 
-        // Step 3: experience level -- local only, then Finish.
+        // Step 3: experience level -- local only, then Continue.
         expect(
           find.byKey(const Key('onboarding_experience_option_beginner')),
           findsOneWidget,
@@ -195,7 +244,25 @@ void main() {
           find.byKey(const Key('onboarding_experience_option_beginner')),
         );
         await tester.pump();
-        await tester.tap(find.byKey(const Key('onboarding_finish_button')));
+        await tester.tap(
+          find.byKey(const Key('onboarding_experience_level_continue_button')),
+        );
+        await tester.pumpAndSettle();
+
+        // Step 4: Meet Your Coach -- the fake user is email-verified and
+        // the AI-generation flag defaults to off, so the deferred state
+        // shows; Finish reaches Home either way.
+        expect(
+          find.byKey(const Key('onboarding_meet_coach_welcome_text')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('onboarding_meet_coach_deferred_text')),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.byKey(const Key('onboarding_meet_coach_finish_button')),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('home_screen_content')), findsOneWidget);
@@ -262,5 +329,128 @@ void main() {
         );
       },
     );
+  });
+
+  group('MeetYourCoachStep', () {
+    late _FakeAuthRepository fakeAuthRepository;
+    late _FakeProfileRepository fakeProfileRepository;
+    late _FakeGoalsRepository fakeGoalsRepository;
+
+    setUp(() {
+      fakeAuthRepository = _FakeAuthRepository();
+      fakeProfileRepository = _FakeProfileRepository();
+      fakeGoalsRepository = _FakeGoalsRepository();
+    });
+
+    testWidgets(
+      'shows the verification-required state for an unverified user, and Finish still reaches Home',
+      (tester) async {
+        fakeAuthRepository.registerEmailVerified = false;
+        final container = _buildContainer(
+          authRepository: fakeAuthRepository,
+          profileRepository: fakeProfileRepository,
+          goalsRepository: fakeGoalsRepository,
+        );
+        addTearDown(container.dispose);
+
+        await _advanceToMeetYourCoach(tester, container);
+
+        expect(
+          find.byKey(const Key('onboarding_meet_coach_welcome_text')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(
+            const Key('onboarding_meet_coach_verification_required_text'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('onboarding_meet_coach_deferred_text')),
+          findsNothing,
+        );
+
+        // BR-2: non-blocking -- Finish still reaches Home.
+        await tester.tap(
+          find.byKey(const Key('onboarding_meet_coach_finish_button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('home_screen_content')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows the deferred state for a verified user when the AI-generation flag is off (the shipped default)',
+      (tester) async {
+        final container = _buildContainer(
+          authRepository: fakeAuthRepository,
+          profileRepository: fakeProfileRepository,
+          goalsRepository: fakeGoalsRepository,
+          aiOnboardingGenerationEnabled: false,
+        );
+        addTearDown(container.dispose);
+
+        await _advanceToMeetYourCoach(tester, container);
+
+        expect(
+          find.byKey(const Key('onboarding_meet_coach_deferred_text')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(
+            const Key('onboarding_meet_coach_verification_required_text'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('onboarding_meet_coach_generating_text')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows the generating state for a verified user when the AI-generation flag is overridden on',
+      (tester) async {
+        final container = _buildContainer(
+          authRepository: fakeAuthRepository,
+          profileRepository: fakeProfileRepository,
+          goalsRepository: fakeGoalsRepository,
+          aiOnboardingGenerationEnabled: true,
+        );
+        addTearDown(container.dispose);
+
+        await _advanceToMeetYourCoach(tester, container);
+
+        expect(
+          find.byKey(const Key('onboarding_meet_coach_generating_text')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('onboarding_meet_coach_deferred_text')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('Finish clears justRegistered regardless of state', (
+      tester,
+    ) async {
+      final container = _buildContainer(
+        authRepository: fakeAuthRepository,
+        profileRepository: fakeProfileRepository,
+        goalsRepository: fakeGoalsRepository,
+      );
+      addTearDown(container.dispose);
+
+      await _advanceToMeetYourCoach(tester, container);
+      await tester.tap(
+        find.byKey(const Key('onboarding_meet_coach_finish_button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(container.read(authNotifierProvider).justRegistered, isFalse);
+    });
   });
 }

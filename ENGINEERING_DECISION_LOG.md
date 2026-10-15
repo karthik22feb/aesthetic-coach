@@ -50,6 +50,39 @@ Copy this template for every new entry:
 
 ## Entries
 
+### 2026-10-15 — "Meet Your Coach" AI-generation call gated behind a hardcoded-off feature flag, not a server-driven one
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 6 (Meet Your Coach step UI)
+**Decision Summary:** The Meet Your Coach step reads `aiOnboardingGenerationEnabledProvider` (`core/di/feature_flags.dart`), a hardcoded `false` Riverpod provider, to decide whether to attempt first-workout AI generation. No real call is wired to the "on" branch -- it renders a distinct, testable UI state but does not call anything, since none of the backend modules the real call would need (Workout Engine, AI Recommendations) exist yet.
+
+**Background:** docs/11-cicd-pipeline.md § 6 documents this project's feature-flag mechanism as server-driven: "a simple `feature_flags` config/table, evaluated per-user, exposed via `GET /me`'s capabilities block." No such capabilities block exists anywhere in the backend's `ProfileResource`/`/me` response today. This is the same shape of gap Task 5 hit with `POST /goals` (a documented mechanism that isn't built yet), so this task's own instructions to wire the real call "behind a feature flag that remains OFF until Sprint 5" needed the same explicit-resolution treatment rather than either inventing a fake capabilities payload or silently hardcoding a bare `bool` with no Riverpod seam.
+
+**Alternatives Considered:**
+- Add a `capabilities` field to `UserProfile`/`ProfileResource` now, parsed from `/me`, to genuinely read a server-driven flag -- rejected: there is no backend work planned for this in Sprint 2, and inventing a response field the backend doesn't send would mean the client silently depends on a contract no one has agreed to; the same "don't invent a missing backend piece" reasoning as Task 5's `GoalsApi` decision applies.
+- A bare `const bool` constant -- rejected: works for "stays off" but can't be overridden per-test, so the "flag on" branch (a real, if currently unreachable, code path) would be untestable without a Riverpod seam -- and this codebase's whole DI/testing convention (every other cross-cutting concern) already goes through `Provider`/`ProviderScope.overrideWithValue`, not bare constants.
+- Write a full `AiGenerationApi`/`CoachApi` against `POST /templates/ai-generate` + `POST /coach/conversations` now, even though the "on" branch is unreachable, mirroring how `GoalsApi` was written in Task 5 even though it isn't wired up -- rejected: Goals had a real migration and model to write a faithful client against; Workout Engine, Templates, and Coach have *nothing* in the backend yet, not even a migration, so writing a full multi-endpoint client now would be speculating about an API shape no document has frozen, not implementing a documented-but-unbuilt contract.
+- A Riverpod `Provider<bool>`, hardcoded `false`, with a UI branch that is real and testable but calls nothing (chosen) -- keeps the gate itself genuine and overridable (tests prove the "on" branch actually renders differently), without inventing either a fake server response or a premature multi-endpoint API client.
+
+**Final Decision:** `aiOnboardingGenerationEnabledProvider` stays `false` through Sprint 2. `MeetYourCoachStep` branches on it (`features/onboarding/presentation/meet_your_coach_step.dart`): off → a "your plan is on its way" deferred message; on (test-only today) → a "Generating your first plan..." message, with an explicit code comment marking where the real call belongs once Workout Engine/AI Recommendations exist. Email-unverified users (BR-2) see a distinct verification-required state regardless of the flag, and Finish always reaches Home.
+
+**Reasoning:** This resolves the task's own instruction the same way Task 5 resolved `POST /goals` -- explicitly, via the project's established "interface/gate now, real implementation later" pattern -- without overshooting into building speculative API surface for modules that don't exist in any form yet.
+
+**Impact:** No user ever sees AI-generated onboarding content yet; every verified user sees the deferred message, every unverified user sees the verification-required message. A future Sprint 5 session wiring up the real call should: (1) replace this hardcoded provider with a real `/me`-capabilities-backed read once that backend field exists, and (2) implement the actual generation call inside the "on" branch's `// TODO(Sprint 5)`-marked spot in `meet_your_coach_step.dart`, using `OnboardingState.selectedExperienceLevel`/`selectedEquipment` as its input.
+
+**Related Files:**
+- `mobile/lib/core/di/feature_flags.dart`
+- `mobile/lib/features/onboarding/presentation/meet_your_coach_step.dart`
+
+**Related Documentation:**
+- [docs/11-cicd-pipeline.md § 6 Feature Flags](docs/11-cicd-pipeline.md#6-feature-flags)
+- [docs/features/onboarding.md § APIs](docs/features/onboarding.md#apis) and [§ Business Rules](docs/features/onboarding.md#business-rules) (BR-2)
+- The 2026-10-07 "Onboarding goal creation backed by a mock `GoalsApiClient`" entry in this log (the precedent this mirrors)
+
+**Git Commit:** `<pending -- working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Sprint 2 Task 6 implementation session
+
 ### 2026-10-07 — Onboarding goal creation backed by a mock `GoalsApiClient`, not the real `POST /goals`
 
 **Sprint:** Phase 1 · Sprint 2

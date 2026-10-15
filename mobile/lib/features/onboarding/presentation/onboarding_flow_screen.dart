@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/error/failure.dart';
-import '../../auth/application/auth_notifier.dart';
 import '../../profile/data/models/profile_enums.dart';
 import '../application/onboarding_notifier.dart';
 import '../application/onboarding_state.dart';
 import '../data/models/onboarding_enums.dart';
+import 'meet_your_coach_step.dart';
 
-/// Sprint 2, Task 5 -- docs/features/onboarding.md's Profile Basics,
-/// Goal Selection, and Experience Level steps, hosted as "a single
-/// onboarding route... not separate bottom-nav destinations" (that
-/// doc's Screen List) via one [OnboardingFlowScreen] that switches its
-/// body on [OnboardingState.step], rather than three separate go_router
-/// routes.
+/// Sprint 2, Tasks 5-6 -- docs/features/onboarding.md's Profile Basics,
+/// Goal Selection, Experience Level, and Meet Your Coach steps, hosted
+/// as "a single onboarding route... not separate bottom-nav
+/// destinations" (that doc's Screen List) via one [OnboardingFlowScreen]
+/// that switches its body on [OnboardingState.step], rather than four
+/// separate go_router routes.
 ///
 /// Reached only immediately after a fresh registration in this app
 /// session (router.dart's redirect guard, gated on
@@ -29,11 +28,9 @@ import '../data/models/onboarding_enums.dart';
 /// for this task, not something silently half-implemented -- see this
 /// session's report and ENGINEERING_DECISION_LOG.md.
 ///
-/// The "Meet Your Coach" AI step (Task 6) and the notification-
-/// permission prompt (Task 7) are separate, not-yet-built steps this
-/// screen does not attempt to anticipate -- finishing the Experience
-/// Level step below goes straight to Home, per this task's own scope
-/// boundary.
+/// The notification-permission prompt (Task 7) is a separate, not-yet-
+/// built step this screen does not attempt to anticipate -- finishing
+/// the Meet Your Coach step goes straight to Home.
 class OnboardingFlowScreen extends ConsumerWidget {
   const OnboardingFlowScreen({super.key});
 
@@ -62,6 +59,7 @@ class OnboardingFlowScreen extends ConsumerWidget {
                 OnboardingStep.profileBasics => const _ProfileBasicsStep(),
                 OnboardingStep.goalSelection => const _GoalSelectionStep(),
                 OnboardingStep.experienceLevel => const _ExperienceLevelStep(),
+                OnboardingStep.meetYourCoach => const MeetYourCoachStep(),
               },
             ),
           ],
@@ -76,6 +74,7 @@ class OnboardingFlowScreen extends ConsumerWidget {
     OnboardingStep.profileBasics => 'Tell us about you',
     OnboardingStep.goalSelection => 'What\'s your main goal?',
     OnboardingStep.experienceLevel => 'Your experience',
+    OnboardingStep.meetYourCoach => 'Meet your coach',
   };
 }
 
@@ -356,11 +355,8 @@ class _GoalSelectionStepState extends ConsumerState<_GoalSelectionStep> {
 }
 
 /// F-ONB-03: experience level + equipment access, local-only (see
-/// OnboardingState.selectedExperienceLevel's docblock). The final step
-/// in this task's scope -- "Finish" clears
-/// [AuthState.justRegistered] and navigates to Home directly, since
-/// "Meet Your Coach" (Task 6) and the notification prompt (Task 7)
-/// don't exist yet.
+/// OnboardingState.selectedExperienceLevel's docblock). "Continue"
+/// advances to the Meet Your Coach step (meet_your_coach_step.dart).
 class _ExperienceLevelStep extends ConsumerStatefulWidget {
   const _ExperienceLevelStep();
 
@@ -423,9 +419,9 @@ class _ExperienceLevelStepState extends ConsumerState<_ExperienceLevelStep> {
             ),
           const SizedBox(height: 24),
           FilledButton(
-            key: const Key('onboarding_finish_button'),
-            onPressed: _selected == null ? null : _finish,
-            child: const Text('Finish'),
+            key: const Key('onboarding_experience_level_continue_button'),
+            onPressed: _selected == null ? null : _submit,
+            child: const Text('Continue'),
           ),
         ],
       ),
@@ -438,11 +434,9 @@ class _ExperienceLevelStepState extends ConsumerState<_ExperienceLevelStep> {
     ExperienceLevel.advanced => 'Advanced',
   };
 
-  void _finish() {
+  void _submit() {
     ref
         .read(onboardingNotifierProvider.notifier)
         .setExperienceLevel(level: _selected!, equipment: _equipment.toList());
-    ref.read(authNotifierProvider.notifier).clearJustRegistered();
-    context.go('/home');
   }
 }

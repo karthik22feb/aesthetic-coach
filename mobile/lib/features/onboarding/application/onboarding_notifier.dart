@@ -13,7 +13,7 @@ import 'onboarding_state.dart';
 const defaultSkippedGoalType = GoalType.habit;
 const defaultSkippedGoalTitle = 'Build a consistent routine';
 
-/// Owns the 3-step onboarding flow's submission state. Hand-written
+/// Owns the 4-step onboarding flow's submission state. Hand-written
 /// `Notifier`, matching [AuthNotifier]/[ProfileNotifier]'s convention.
 ///
 /// Each step's submission reuses an existing, real, already-tested
@@ -78,14 +78,13 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
   /// Step 3: experience level + equipment. Purely local (no backend
   /// field exists yet -- see [OnboardingState.selectedExperienceLevel]'s
   /// docblock), so this never fails and never sets [isSubmitting].
-  /// Advancing past this step (calling `AuthNotifier.clearJustRegistered`
-  /// and navigating to `/home`) is the screen's own responsibility, not
-  /// this notifier's -- there is no further step state to transition to.
+  /// Advances to the Meet Your Coach step (Task 6).
   void setExperienceLevel({
     required ExperienceLevel level,
     required List<String> equipment,
   }) {
     state = state.copyWith(
+      step: OnboardingStep.meetYourCoach,
       selectedExperienceLevel: level,
       selectedEquipment: equipment,
     );

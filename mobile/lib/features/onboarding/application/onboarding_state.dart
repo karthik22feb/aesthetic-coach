@@ -1,13 +1,18 @@
 import '../../../core/error/failure.dart';
 import '../data/models/onboarding_enums.dart';
 
-/// The 3 steps Sprint 2, Task 5 ships, per
+/// The 4 steps Sprint 2, Tasks 5-6 ship, per
 /// docs/features/onboarding.md's UI Flow and
-/// docs/TASK_BREAKDOWN.md § Sprint 2 (Task 5). "Meet Your Coach" (Task 6)
-/// and the notification-permission prompt (Task 7) are separate,
-/// not-yet-built steps that would extend this enum, not this file's
-/// concern to anticipate.
-enum OnboardingStep { profileBasics, goalSelection, experienceLevel }
+/// docs/TASK_BREAKDOWN.md § Sprint 2 (Tasks 5-6). The notification-
+/// permission prompt (Task 7) is a separate, not-yet-built step that
+/// would extend this enum further, not this file's concern to
+/// anticipate.
+enum OnboardingStep {
+  profileBasics,
+  goalSelection,
+  experienceLevel,
+  meetYourCoach,
+}
 
 class OnboardingState {
   const OnboardingState({
@@ -40,9 +45,10 @@ class OnboardingState {
 
   /// Collected by the Experience Level step but not sent anywhere yet --
   /// no backend field exists for it (see
-  /// docs/features/onboarding.md's APIs list). Carried in-memory only,
-  /// for the not-yet-built "Meet Your Coach" step (F-ONB-03) to read
-  /// once it exists.
+  /// docs/features/onboarding.md's APIs list). Carried in-memory only;
+  /// the "Meet Your Coach" step (F-ONB-03) will read this once the real
+  /// AI-generation call it would feed into actually exists (Sprint 5 --
+  /// see core/di/feature_flags.dart).
   final ExperienceLevel? selectedExperienceLevel;
   final List<String> selectedEquipment;
 
