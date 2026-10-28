@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/di/devices_providers.dart';
 import '../../../core/di/goals_providers.dart';
 import '../../../core/di/profile_providers.dart';
+import '../../../core/di/push_notification_providers.dart';
 import '../../../core/error/failure.dart';
 import '../data/models/onboarding_enums.dart';
 import 'onboarding_state.dart';
@@ -13,7 +15,7 @@ import 'onboarding_state.dart';
 const defaultSkippedGoalType = GoalType.habit;
 const defaultSkippedGoalTitle = 'Build a consistent routine';
 
-/// Owns the 4-step onboarding flow's submission state. Hand-written
+/// Owns the 5-step onboarding flow's submission state. Hand-written
 /// `Notifier`, matching [AuthNotifier]/[ProfileNotifier]'s convention.
 ///
 /// Each step's submission reuses an existing, real, already-tested
@@ -87,6 +89,46 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       step: OnboardingStep.meetYourCoach,
       selectedExperienceLevel: level,
       selectedEquipment: equipment,
+    );
+  }
+
+  /// Step 4: Meet Your Coach has no submission of its own (see
+  /// meet_your_coach_step.dart) -- "Continue" just advances to the
+  /// Notification Permission step (Task 7).
+  void advanceToNotificationPermission() {
+    state = state.copyWith(step: OnboardingStep.notificationPermission);
+  }
+
+  /// Step 5: requests push-notification permission (always "not
+  /// granted" in a shipped build today -- see
+  /// [PushNotificationPermissionClient]'s docblock) and, only if
+  /// granted *and* a real token came back, registers it via
+  /// [DevicesRepositoryContract.registerDevice]. Per
+  /// docs/features/onboarding.md's Error Handling ("non-blocking by
+  /// design") and this step's own denial edge case ("onboarding
+  /// proceeds normally"), a registration failure is swallowed, not
+  /// surfaced -- this call never throws and never blocks finishing
+  /// onboarding; callers don't need to check for a [Failure] the way
+  /// they do for [submitProfileBasics]/[selectGoal].
+  Future<void> requestNotificationPermission() async {
+    state = state.copyWith(isSubmitting: true);
+    final result = await ref
+        .read(pushNotificationPermissionClientProvider)
+        .requestPermission();
+
+    if (result.granted && result.pushToken != null) {
+      try {
+        await ref
+            .read(devicesRepositoryProvider)
+            .registerDevice(result.pushToken!);
+      } on Failure {
+        // Swallowed deliberately -- see this method's docblock.
+      }
+    }
+
+    state = state.copyWith(
+      isSubmitting: false,
+      notificationPermissionGranted: result.granted,
     );
   }
 }

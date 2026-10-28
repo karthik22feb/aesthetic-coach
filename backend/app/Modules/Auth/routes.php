@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Auth\Http\Controllers\DeviceController;
 use App\Modules\Auth\Http\Controllers\ProfileController;
 use App\Modules\Auth\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
@@ -84,4 +85,26 @@ Route::middleware(['auth:api', 'throttle:auth'])->group(function () {
 Route::middleware(['auth:api', 'throttle:api'])->group(function () {
     Route::get('me', [ProfileController::class, 'show']);
     Route::patch('me', [ProfileController::class, 'update']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Device Routes -- Sprint 2, Task 8 (docs/TASK_BREAKDOWN.md)
+|--------------------------------------------------------------------------
+|
+| POST /devices only, per docs/05-api-specification.md section 6.11
+| ("Register device push token") -- pulled forward from the full
+| Notifications module (Sprint 5) specifically to unblock the Onboarding
+| notification-permission step (Sprint 2, Task 7). Updates the push
+| token on the *current* session's already-existing `devices` row
+| (created at register/login) -- never creates a new one, and there is
+| no corresponding GET; the mobile client already knows the token it
+| just sent.
+|
+| Uses the same general 'api' limiter as /me, not the 10/min 'auth'
+| limiter -- registering a push token isn't a brute-force-prone action.
+|
+*/
+Route::middleware(['auth:api', 'throttle:api'])->group(function () {
+    Route::post('devices', [DeviceController::class, 'store']);
 });

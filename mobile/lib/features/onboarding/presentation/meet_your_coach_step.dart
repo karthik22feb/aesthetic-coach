@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/di/feature_flags.dart';
 import '../../auth/application/auth_notifier.dart';
+import '../application/onboarding_notifier.dart';
 
 /// Sprint 2, Task 6 -- docs/features/onboarding.md's F-ONB-04 ("Run one
 /// guided AI conversation turn that ends in a generated first
@@ -18,11 +18,12 @@ import '../../auth/application/auth_notifier.dart';
 /// actually make today, only this gate to leave correctly in place for
 /// when there is.
 ///
-/// Always reachable and always finishable regardless of email
-/// verification or the flag's value -- per docs/features/onboarding.md's
-/// Error Handling ("non-blocking by design") and Business Rules (BR-2:
-/// "the user can finish onboarding and verify later, with the first-
-/// workout generation deferred").
+/// Always reachable and always continuable (to the Notification
+/// Permission step, Task 7) regardless of email verification or the
+/// flag's value -- per docs/features/onboarding.md's Error Handling
+/// ("non-blocking by design") and Business Rules (BR-2: "the user can
+/// finish onboarding and verify later, with the first-workout
+/// generation deferred").
 class MeetYourCoachStep extends ConsumerWidget {
   const MeetYourCoachStep({super.key});
 
@@ -80,17 +81,14 @@ class MeetYourCoachStep extends ConsumerWidget {
             ),
           const SizedBox(height: 24),
           FilledButton(
-            key: const Key('onboarding_meet_coach_finish_button'),
-            onPressed: () => _finish(context, ref),
-            child: const Text('Finish'),
+            key: const Key('onboarding_meet_coach_continue_button'),
+            onPressed: () => ref
+                .read(onboardingNotifierProvider.notifier)
+                .advanceToNotificationPermission(),
+            child: const Text('Continue'),
           ),
         ],
       ),
     );
-  }
-
-  void _finish(BuildContext context, WidgetRef ref) {
-    ref.read(authNotifierProvider.notifier).clearJustRegistered();
-    context.go('/home');
   }
 }

@@ -19,7 +19,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | 1. [Infrastructure](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) | In Progress | 75% | 2026-08-06 | — |
 | 2. [Authentication](docs/IMPLEMENTATION_ORDER.md#2-authentication) | Complete | 100% | 2026-08-07 | 2026-09-29 |
 | 3. [User Profile](docs/IMPLEMENTATION_ORDER.md#3-user-profile) | Complete | 100% | 2026-08-19 | 2026-08-27 |
-| 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | In Progress | 15% | 2026-08-28 | — |
+| 4. [AI Onboarding](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding) | Complete | 100% | 2026-08-28 | 2026-10-27 |
 | 5. [Dashboard (shell)](docs/IMPLEMENTATION_ORDER.md#5-dashboard-shell) | Pending | 0% | — | — |
 | 6. [Workout Engine](docs/IMPLEMENTATION_ORDER.md#6-workout-engine) | Pending | 0% | — | — |
 | 7. [Exercise Library](docs/IMPLEMENTATION_ORDER.md#7-exercise-library) | Pending | 0% | — | — |
@@ -33,7 +33,7 @@ Full module detail (objectives, dependencies, DoD, exit criteria): [IMPLEMENTATI
 | 15. [Deployment](docs/IMPLEMENTATION_ORDER.md#15-deployment) | Pending | 0% | — | — |
 | 16. [Production Launch](docs/IMPLEMENTATION_ORDER.md#16-production-launch) | Pending | 0% | — | — |
 
-**Phase 1 overall progress: 2 of 16 modules complete (13%); 2 in progress.**
+**Phase 1 overall progress: 3 of 16 modules complete (19%); 1 in progress.**
 
 Module 1 (Infrastructure) — per its [Definition of Done](docs/IMPLEMENTATION_ORDER.md#1-infrastructure) ("both scaffolds build and run locally; CI runs lint + a trivial test on every PR; staging environment is reachable"): backend Laravel scaffold, local Docker dev environment, and backend CI are done and validated. The Flutter scaffold now also exists on `main` — `mobile/` (Riverpod + go_router foundation, 5-tab shell) and a mobile CI workflow (analyze/format/test on every PR) were merged via squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1) (commit `38f1da6`). `flutter analyze` and `flutter test` pass on `main`, but a true `flutter run`/`flutter build` has not been exercised in this environment (no Android SDK, no Chrome, no Linux desktop build toolchain available on the dev server — see [NEXT_TASK.md](NEXT_TASK.md) for detail), so "both scaffolds build and run locally" is only partially verified for the mobile side. Staging environment provisioning has not been addressed. Module stays **In Progress**.
 
@@ -66,6 +66,15 @@ Module 3 (User Profile) — scope per [IMPLEMENTATION_ORDER.md § 3](docs/IMPLEM
 
 **Note:** [TASK_BREAKDOWN.md § Sprint 2, Task 3](docs/TASK_BREAKDOWN.md#sprint-2--user-profile--ai-onboarding) (basic Settings screen: theme, unit preference) is also **merged to `main`** (squash-merge of [PR #6](https://github.com/karthik22feb/aesthetic-coach/pull/6), commit `450442b`), approved by an independent reviewer (`shashwanth22dec`) before merge, and re-verified post-merge (102/102 tests passing, `flutter analyze`/`dart format` clean, release APK build SUCCESS, 54.1MB, no OOM). It is **not** part of Module 3's scope ([IMPLEMENTATION_ORDER.md § 3](docs/IMPLEMENTATION_ORDER.md#3-user-profile) lists only `GET/PATCH /me` and the Flutter Profile screen as this module's Outputs) and has no dedicated module of its own in this document's 16-module table — it's tracked at the Sprint level only, in [MASTER_IMPLEMENTATION_PLAN.md § Sprint Tracker](MASTER_IMPLEMENTATION_PLAN.md#sprint-tracker). Unit preference reuses Task 1/2's server-backed field; theme is genuinely device-local (`shared_preferences`). Notification preferences, sessions, export, and account deletion remain deferred to Sprint 6 per [docs/features/settings.md](docs/features/settings.md)'s own Release Phase split.
 - [ ] Summary stats (F-PROF-02) and Body Measurements/Progress Photos entry points (F-PROF-03) — deliberately deferred, dependent on unbuilt modules
+
+Module 4 (AI Onboarding) — per [IMPLEMENTATION_ORDER.md § 4](docs/IMPLEMENTATION_ORDER.md#4-ai-onboarding), Outputs are "onboarding screens; a seeded `goals` row; a placeholder/feature-flagged AI-generation call," and the Definition of Done is "full flow navigable end-to-end; AI step behind a flag until its dependencies land." All of [TASK_BREAKDOWN.md § Sprint 2](docs/TASK_BREAKDOWN.md#sprint-2--user-profile--ai-onboarding) Tasks 4–9 are now merged to `main`: Task 4 (`goals` migration/model), Tasks 5–7 (the full 5-step onboarding flow — Profile Basics, Goal Selection, Experience Level, Meet Your Coach, Notification Permission), Task 8 (`POST /devices`, pulled forward from the Notifications module/Sprint 5 since Task 7 needs it), and Task 9 (Pest coverage for profile update + goals). The flow is directly, automatedly verified end-to-end: a dedicated widget test drives a fresh registration through all 5 steps to Home (`mobile/test/widget/onboarding_flow_screen_test.dart`), satisfying this module's own exit criterion ("a new user reaches Home having completed every onboarding step"). The AI-generation step ("Meet Your Coach") is correctly behind a flag (`aiOnboardingGenerationEnabledProvider`, hardcoded off) per that same exit criterion's "with the AI step producing a real result once flagged on" -- the flag exists and is tested, but nothing is wired to flip it on yet (Sprint 5: Workout Engine + AI Recommendations don't exist in the backend in any form). Two Task 5-7 decisions are recorded in `ENGINEERING_DECISION_LOG.md` rather than silently shipped: goal creation is mock-backed (`POST /goals`'s full CRUD endpoint remains Sprint 4 scope), and the Notification Permission step's push-token registration never actually fires in a shipped build (no `permission_handler`/`firebase_messaging` plugin or Firebase project exists yet -- `POST /devices` itself is real and fully tested, simply never called). **Module row moves to Complete.** Tasks 10 (widget tests: skip/resume) and 11 (a further full-onboarding integration test) remain as additional, non-blocking test-coverage work -- see [NEXT_TASK.md](NEXT_TASK.md).
+
+- [x] `goals` table migration + Eloquent model (Task 4) — merged to `main` (`7c5d12e`, PR #8)
+- [x] Onboarding flow screens: Profile Basics, Goal Selection, Experience Level, Meet Your Coach, Notification Permission (Tasks 5–7) — full flow automatedly verified reaching Home
+- [x] `POST /devices` endpoint (Task 8) — real, tested, not yet actually called in production (see above)
+- [x] Pest tests: profile update, onboarding goal creation (Task 9)
+- [ ] Widget tests: onboarding flow navigation, skip/resume behavior (Task 10)
+- [ ] Integration test: full onboarding flow reaches Home with AI step correctly deferred (Task 11)
 
 ## Phase 2 — AI Personal Coach
 

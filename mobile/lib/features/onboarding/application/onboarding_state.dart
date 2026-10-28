@@ -1,17 +1,16 @@
 import '../../../core/error/failure.dart';
 import '../data/models/onboarding_enums.dart';
 
-/// The 4 steps Sprint 2, Tasks 5-6 ship, per
+/// The 5 steps Sprint 2, Tasks 5-7 ship, per
 /// docs/features/onboarding.md's UI Flow and
-/// docs/TASK_BREAKDOWN.md § Sprint 2 (Tasks 5-6). The notification-
-/// permission prompt (Task 7) is a separate, not-yet-built step that
-/// would extend this enum further, not this file's concern to
-/// anticipate.
+/// docs/TASK_BREAKDOWN.md § Sprint 2 (Tasks 5-7). This is the full
+/// documented flow -- nothing further to anticipate here.
 enum OnboardingStep {
   profileBasics,
   goalSelection,
   experienceLevel,
   meetYourCoach,
+  notificationPermission,
 }
 
 class OnboardingState {
@@ -22,6 +21,7 @@ class OnboardingState {
     this.selectedGoalType,
     this.selectedExperienceLevel,
     this.selectedEquipment = const [],
+    this.notificationPermissionGranted,
   });
 
   static const initial = OnboardingState(step: OnboardingStep.profileBasics);
@@ -52,6 +52,18 @@ class OnboardingState {
   final ExperienceLevel? selectedExperienceLevel;
   final List<String> selectedEquipment;
 
+  /// Null until the Notification Permission step's "Enable
+  /// notifications" action resolves; then the permission outcome
+  /// ([PushPermissionResult.granted]). Not read by the step's own UI --
+  /// per [UnavailablePushNotificationPermissionClient], the result is
+  /// always `false` today, and the step finishes onboarding (navigates
+  /// away) immediately after this resolves, so there is no frame in
+  /// which showing a distinct "denied" message would ever actually be
+  /// seen. Kept so tests can assert on the outcome directly rather than
+  /// only on whether a repository call happened -- see
+  /// OnboardingNotifier.requestNotificationPermission's tests.
+  final bool? notificationPermissionGranted;
+
   OnboardingState copyWith({
     OnboardingStep? step,
     bool? isSubmitting,
@@ -60,6 +72,7 @@ class OnboardingState {
     GoalType? selectedGoalType,
     ExperienceLevel? selectedExperienceLevel,
     List<String>? selectedEquipment,
+    bool? notificationPermissionGranted,
   }) {
     return OnboardingState(
       step: step ?? this.step,
@@ -69,6 +82,8 @@ class OnboardingState {
       selectedExperienceLevel:
           selectedExperienceLevel ?? this.selectedExperienceLevel,
       selectedEquipment: selectedEquipment ?? this.selectedEquipment,
+      notificationPermissionGranted:
+          notificationPermissionGranted ?? this.notificationPermissionGranted,
     );
   }
 }

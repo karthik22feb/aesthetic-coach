@@ -7,13 +7,14 @@ import '../application/onboarding_notifier.dart';
 import '../application/onboarding_state.dart';
 import '../data/models/onboarding_enums.dart';
 import 'meet_your_coach_step.dart';
+import 'notification_permission_step.dart';
 
-/// Sprint 2, Tasks 5-6 -- docs/features/onboarding.md's Profile Basics,
-/// Goal Selection, Experience Level, and Meet Your Coach steps, hosted
-/// as "a single onboarding route... not separate bottom-nav
-/// destinations" (that doc's Screen List) via one [OnboardingFlowScreen]
-/// that switches its body on [OnboardingState.step], rather than four
-/// separate go_router routes.
+/// Sprint 2, Tasks 5-7 -- docs/features/onboarding.md's full documented
+/// flow (Profile Basics, Goal Selection, Experience Level, Meet Your
+/// Coach, Notification Permission), hosted as "a single onboarding
+/// route... not separate bottom-nav destinations" (that doc's Screen
+/// List) via one [OnboardingFlowScreen] that switches its body on
+/// [OnboardingState.step], rather than five separate go_router routes.
 ///
 /// Reached only immediately after a fresh registration in this app
 /// session (router.dart's redirect guard, gated on
@@ -27,10 +28,6 @@ import 'meet_your_coach_step.dart';
 /// API). Full cross-restart resume is therefore a known, flagged gap
 /// for this task, not something silently half-implemented -- see this
 /// session's report and ENGINEERING_DECISION_LOG.md.
-///
-/// The notification-permission prompt (Task 7) is a separate, not-yet-
-/// built step this screen does not attempt to anticipate -- finishing
-/// the Meet Your Coach step goes straight to Home.
 class OnboardingFlowScreen extends ConsumerWidget {
   const OnboardingFlowScreen({super.key});
 
@@ -60,6 +57,8 @@ class OnboardingFlowScreen extends ConsumerWidget {
                 OnboardingStep.goalSelection => const _GoalSelectionStep(),
                 OnboardingStep.experienceLevel => const _ExperienceLevelStep(),
                 OnboardingStep.meetYourCoach => const MeetYourCoachStep(),
+                OnboardingStep.notificationPermission =>
+                  const NotificationPermissionStep(),
               },
             ),
           ],
@@ -75,6 +74,7 @@ class OnboardingFlowScreen extends ConsumerWidget {
     OnboardingStep.goalSelection => 'What\'s your main goal?',
     OnboardingStep.experienceLevel => 'Your experience',
     OnboardingStep.meetYourCoach => 'Meet your coach',
+    OnboardingStep.notificationPermission => 'Stay in the loop',
   };
 }
 

@@ -8,42 +8,40 @@
 
 ## Task
 
-**Sprint 2, Task 9 — Pest tests: profile update, onboarding goal creation.**
+**Sprint 2, Task 10 — Widget tests: onboarding flow navigation, skip/resume behavior.**
 
-Module 2 (Authentication) is now **Complete** — Task 20 (end-to-end verification) landed against a real production deployment; see [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md) and [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md) for the full scope of what was verified. Sprint 2 Tasks 1–4 are already merged to `main` ahead of strict roadmap order (Module 3, User Profile, is Complete). [TASK_BREAKDOWN.md § Sprint 2](docs/TASK_BREAKDOWN.md#sprint-2--user-profile--ai-onboarding) lists Task 9 ("Pest tests: profile update, onboarding goal creation") as depending only on Tasks 1 and 4, both already done — it's the smallest fully-unblocked item remaining in Sprint 2.
+Modules 2 (Authentication), 3 (User Profile), and 4 (AI Onboarding) are all now **Complete**. Sprint 2 Tasks 1–9 are done: Task 9 (Pest tests: profile update, onboarding goal creation — commit `4f33733`), Task 5 (onboarding flow screens — commit `f7c3f95`), Task 6 ("Meet Your Coach" step, AI call feature-flagged off — commit `e339e3b`), and Tasks 7+8 together (notification-permission step + `POST /devices`, implemented and validated this session, not yet committed). [TASK_BREAKDOWN.md § Sprint 2](docs/TASK_BREAKDOWN.md#sprint-2--user-profile--ai-onboarding) lists Task 10 ("Widget tests: onboarding flow navigation, skip/resume behavior") as depending on Tasks 5–7, all now done — it's the smallest fully-unblocked item remaining in Sprint 2.
 
-Task 1's profile-update endpoint already has substantial existing Pest coverage (`ProfileTest.php`, referenced in earlier sessions) — this task's real remaining work is auditing that coverage against [Testing Strategy § 5](docs/10-testing-strategy.md#5-api-testing)'s checklist (happy path, validation, auth, cross-user isolation, idempotency) and adding tests for the `goals` table/model from Task 4, which has no dedicated test coverage yet (Task 4 was verified only via a manual Tinker round-trip, not an automated test).
+Substantial widget-level coverage of the onboarding flow already exists as a side effect of Tasks 5–8's own test suites (`onboarding_flow_screen_test.dart` already drives the full 5-step happy path end-to-end to Home, plus Meet-Your-Coach-specific and notification-permission-specific cases). This task's real remaining work is auditing that existing coverage against [Onboarding § Edge Cases](docs/features/onboarding.md#edge-cases) specifically — skip behavior at each skippable step (goal selection, notification permission), and **resume** behavior (app restarted/killed mid-onboarding — does `AuthState.justRegistered` or step state survive, and what should happen if not) — then filling whatever gaps that audit finds rather than assuming the existing tests already cover it.
 
-**Alternative candidate, not chosen:** Sprint 2 Task 5 (onboarding flow screens: profile basics, goal selection, experience level) is also unblocked (depends only on Task 2, done) and is a larger, feature-shaped piece of work — a reasonable next choice if test-coverage work is deprioritized in favor of feature velocity, but Task 9 was picked here as the smaller, lower-risk item that closes an existing gap rather than opening new surface area.
-
-**Not this task — tracked separately:** Task 20's two follow-up verification items (production email verification, explicit production logout verification — see [PRODUCTION_DEPLOYMENT_REPORT.md § Remaining Follow-Up Items](PRODUCTION_DEPLOYMENT_REPORT.md#remaining-follow-up-items)) are not folded into Task 9's scope above; they remain distinct, separately trackable items governed by their own prerequisites (a real mail transport, for email verification) rather than the existing Sprint 2 task sequence.
+**Alternative candidate, not chosen:** Sprint 2 Task 11 (integration test: full onboarding flow reaches Home with AI step correctly deferred) depends on Task 10, so it isn't actually unblocked yet — it becomes the next task immediately after this one.
 
 ## Context
 
-- Module: Sprint 2 has no single dedicated module row of its own in [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORDER.md)'s 16-module list beyond Module 3 (User Profile, already Complete) and Module 4 (AI Onboarding, In Progress) — Task 9 contributes test coverage to both.
+- Module: Sprint 2 has no single dedicated module row of its own in [IMPLEMENTATION_ORDER.md](docs/IMPLEMENTATION_ORDER.md)'s 16-module list beyond Module 3 (User Profile) and Module 4 (AI Onboarding), both already Complete — Task 10 adds test-coverage depth on top of work those modules already closed out.
 - Sprint: [Phase 1 · Sprint 2 — User Profile & AI Onboarding](docs/16-development-roadmap.md#phase-1--sprint-2--user-profile--ai-onboarding)
-- **Environment note:** this session ran on a bare Windows machine with no local PHP/Composer/Docker at all — Pest tests could not be executed locally here. Prior sessions ran backend work on a separate Linux dev server (`10.24.8.219`, `/var/www/html/aesthetic-coach`, `HOME=/var/flutter-home` override for Flutter/Dart only — irrelevant to PHP) where PHP/Composer/MySQL/Redis/Docker are already installed and validated (see [SERVER_SETUP_REPORT.md](SERVER_SETUP_REPORT.md)). That dev server (not the separate `10.24.1.22` production server from Task 20) is almost certainly still the right place to run this task's Pest suite.
+- **Environment note:** Flutter/Dart tooling runs fine on this local Windows machine (`flutter analyze`/`flutter test`/`flutter build apk --release` all used directly in the Tasks 5–8 sessions) — no remote server needed for this task, unlike backend Pest work.
 
 ## Primary Documents
 
-- [Testing Strategy § 5 API Testing](docs/10-testing-strategy.md#5-api-testing) — the checklist every Feature test suite needs to satisfy
-- [Profile feature](docs/features/profile.md) and [Database Design § 3.5](docs/04-database-design.md#35-habits--goals) (`goals` table)
-- Existing `backend/tests/Feature/Profile/ProfileTest.php` (audit its current coverage first — don't duplicate what's already there)
+- [Onboarding § Edge Cases](docs/features/onboarding.md#edge-cases) — the specific skip/resume scenarios this task's tests need to cover
+- [Onboarding feature](docs/features/onboarding.md) and [Mobile Architecture § 2](docs/08-mobile-architecture.md#2-folder-organization)
+- Existing `mobile/test/widget/onboarding_flow_screen_test.dart` and `mobile/test/widget/notification_permission_step_test.dart` (audit current coverage first — don't duplicate what's already there)
 
-## Definition of Done (for Task 9, once started)
+## Definition of Done (for Task 10, once started)
 
-- [ ] Existing profile-update Pest coverage audited against [Testing Strategy § 5](docs/10-testing-strategy.md#5-api-testing)'s checklist (happy path, validation, auth, cross-user isolation, idempotency); gaps filled
-- [ ] New Pest Feature tests added for the `goals` table/model (Task 4) — at minimum, model creation, the documented enum casts, and the `user()`/`goals()` relations
-- [ ] Full Pest suite run and passing on the Linux dev server (or another environment with a working `mysql` Docker hostname / real MySQL connection)
-- [ ] `composer validate --strict` and Pint clean
+- [ ] Existing onboarding widget-test coverage audited against [Onboarding § Edge Cases](docs/features/onboarding.md#edge-cases); gaps identified explicitly before writing new tests
+- [ ] Skip behavior covered for every skippable step (goal selection, notification permission) — already partially covered, confirm and extend if needed
+- [ ] Resume behavior covered (app restart/kill mid-onboarding) — not yet covered by any existing test; needs a deliberate design decision on what "resume" means given `AuthState.justRegistered` is in-memory-only (not persisted across restart)
+- [ ] `flutter analyze`, `flutter test`, `dart format --set-exit-if-changed` all clean
 
 ## After Completing This Task
 
 1. Confirm the Definition of Done above is fully met — see [AI_DEVELOPMENT_GUIDE.md § Definition of Done](docs/AI_DEVELOPMENT_GUIDE.md#definition-of-done-before-moving-to-the-next-task).
 2. Update [MASTER_IMPLEMENTATION_PLAN.md](MASTER_IMPLEMENTATION_PLAN.md)'s Sprint Tracker / Module Progress and [IMPLEMENTATION_PROGRESS.md](IMPLEMENTATION_PROGRESS.md).
-3. Replace this file's **Task**, **Context**, **Primary Documents**, and **Definition of Done** with the next task (Sprint 2 Task 5, onboarding flow screens, or the next smallest unblocked item — check [MODULE_DEPENDENCIES.md](docs/MODULE_DEPENDENCIES.md)).
+3. Replace this file's **Task**, **Context**, **Primary Documents**, and **Definition of Done** with the next task (Sprint 2 Task 11, integration test: full onboarding flow reaches Home with AI step correctly deferred — now unblocked once Task 10 lands).
 4. Update the **Last updated** line below.
 
 ---
 
-**Last updated:** 2026-09-29 · **Session:** Task 20 production E2E verification, then Post-Task 20 Stabilization, Documentation & Production Readiness Audit · **Status:** Task 20 complete against a real production deployment (see [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)); Module 2 (Authentication) moves to Complete. This file's task replaced per this session's own Step 3 above — Sprint 2, Task 9 is next.
+**Last updated:** 2026-10-27 · **Session:** Sprint 2 Tasks 7+8 (notification permission onboarding step + `POST /devices`), implemented together · **Status:** Tasks 7+8 implemented and fully validated this session (backend: 167/167 Pest passing; mobile: 139/139 tests passing, release APK build SUCCESS) but **not yet committed**. Module 4 (AI Onboarding) moves to Complete. This file's task replaced per this session's own Step 3 above — Sprint 2, Task 10 is next.

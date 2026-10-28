@@ -6,7 +6,11 @@
 
 ## Current Status
 
-**Phase 1 · Sprint 1 — Task 20: COMPLETE — VERIFIED SCOPE WITH FOLLOW-UP ITEMS (scope note below); Module 2 (Authentication) now Complete.** A real production deployment (`10.24.1.22`, HTTPS via institutional WAF path routing at `https://acrinternal.iitm.ac.in/aesthetic-coach` — see [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)) was stood up, a dedicated Android release signing keystore was generated, a release-build-only missing `INTERNET` permission bug was found and fixed, and the Dio `AuthInterceptor`'s 401→refresh→retry→success cycle was **runtime-verified** (not just code-reviewed) via direct server-log correlation against that real production backend from the real release-signed Flutter client. Register and login were exercised against the same deployment as part of this verification; email verification (mail is deferred, `MAIL_MAILER=log`) and an explicit logout call were not separately exercised, and the institutional WAF blocks `PATCH`/`PUT`/`DELETE` for this path (a real, documented, WAF-owned infrastructure limitation, not an application bug) — see [PRODUCTION_DEPLOYMENT_REPORT.md § Task 20 — Closure Scope Reconciliation](PRODUCTION_DEPLOYMENT_REPORT.md#task-20--closure-scope-reconciliation) for the precise scope. The entire backend Authentication module (register/login/logout, refresh-token rotation, session/device management, Google/Apple Sign-In, email verification, password reset) is merged to `main`, tagged `v1.0.0-auth-complete`. The Flutter mobile foundation (project scaffold, Riverpod/go_router skeleton, 5-tab shell, mobile CI — Tasks 5–7) is merged to `main` (squash-merge of [PR #1](https://github.com/karthik22feb/aesthetic-coach/pull/1), commit `38f1da6`). The Flutter auth client (Login/Signup screens, Dio `AuthInterceptor`, secure token storage — Tasks 17–19) is merged to `main` (squash-merge of [PR #2](https://github.com/karthik22feb/aesthetic-coach/pull/2), commit `f7a2580`). Next: Sprint 2, Task 9 (Pest tests: profile update, onboarding goal creation) — see [NEXT_TASK.md](NEXT_TASK.md). Separately, **Sprint 2 · Task 1** (`GET/PATCH /me` profile endpoint) is merged to `main` (squash-merge of [PR #4](https://github.com/karthik22feb/aesthetic-coach/pull/4), commit `5f7f706`), re-verified post-merge (144/144 Pest tests, Pint clean) — backend/local verification only, not staging or real-device verified. **Sprint 2 · Task 2** (Flutter Profile screen + Edit Profile sheet) is also merged to `main` (squash-merge of [PR #5](https://github.com/karthik22feb/aesthetic-coach/pull/5), commit `cc2385f`), re-verified post-merge (90/90 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. **Module 3 (User Profile) is now Complete.** **Sprint 2 · Task 3** (basic Settings screen: theme, unit preference) is also merged to `main` (squash-merge of [PR #6](https://github.com/karthik22feb/aesthetic-coach/pull/6), commit `450442b`), re-verified post-merge (102/102 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) — Flutter-test verification only, not staging or real-device verified. None of these three tasks changes Task 20's blocked status. Separately, this project's **first real Android device/emulator testing** (on a local Windows dev machine, not the Linux server, which has no KVM) found and fixed a genuine client-side URL-construction bug: `ApiConfig.baseUrl` lacking a trailing slash caused Dio to silently concatenate relative paths into malformed URLs (e.g. `/api/v1auth/register` instead of `/api/v1/auth/register`), surfacing as a misleading "Unable to reach the server" error on every API call. Fixed and merged to `main` (squash-merge of [PR #7](https://github.com/karthik22feb/aesthetic-coach/pull/7), commit `11da8ea`), re-verified post-merge (104/104 tests, `flutter analyze`/`dart format` clean, release APK build SUCCESS) and confirmed against the real emulator + local Laravel backend (register/login/`GET /me` all now hit the correct paths). This does not touch Task 20 or staging/real-device *E2E* verification, which remain separately BLOCKED/not started. Separately, **Sprint 2 · Task 4** (`goals` table migration + Eloquent model) is merged to `main` (squash-merge of [PR #8](https://github.com/karthik22feb/aesthetic-coach/pull/8), commit `7c5d12e`), approved by two independent reviewers distinct from the author (the migration-touching review requirement) and re-verified post-merge (`composer validate --strict` clean, Pint clean, a direct Tinker database round-trip against the real local MySQL instance confirmed) — the full Pest suite remains **not verified locally**, blocked by a pre-existing Docker-Compose `mysql`-hostname requirement in `phpunit.xml` that this bare-Windows environment doesn't satisfy (confirmed unrelated to this change: it reproduces identically on unrelated pre-existing tests). Task 4 provides only the migration/model layer; the `POST /goals` endpoint remains Sprint 4 scope, so **Module 4 (AI Onboarding) moves to In Progress**, not Complete. Does not touch or unblock Task 20.
+**Phase 1 · Sprint 1 is Complete** (Module 2/Authentication closed out by Task 20 — COMPLETE, VERIFIED SCOPE WITH FOLLOW-UP ITEMS; see [PRODUCTION_DEPLOYMENT_REPORT.md](PRODUCTION_DEPLOYMENT_REPORT.md)). **Phase 1 · Sprint 2 (User Profile & AI Onboarding) has landed Tasks 1–9**: `GET/PATCH /me` (Task 1, PR #4), Flutter Profile screen (Task 2, PR #5), basic Settings screen (Task 3, PR #6), the `goals` migration/model (Task 4, PR #8), the full 5-step Onboarding flow — Profile Basics, Goal Selection, Experience Level, Meet Your Coach, Notification Permission (Tasks 5–7), `POST /devices` (Task 8), and Pest test coverage for profile update + goals (Task 9). **Module 3 (User Profile) and Module 4 (AI Onboarding) are both Complete.**
+
+Two things shipped in Tasks 5–8 are deliberately real-but-not-fully-wired, each recorded as its own `ENGINEERING_DECISION_LOG.md` entry rather than silently glossed over: goal creation during onboarding goes through a mock `GoalsApiClient` (the real `POST /goals` CRUD endpoint is Sprint 4 scope — only the migration/model exist); and the Notification Permission step's "Enable notifications" action can never actually register a real push token in a shipped build, since no `permission_handler`/`firebase_messaging` plugin or Firebase project exists yet (Sprint 5 infra scope) — `POST /devices` itself (Task 8) is real and fully wired, just never actually called today.
+
+Next: Sprint 2, Task 10 (widget tests: onboarding flow navigation, skip/resume behavior) — see [NEXT_TASK.md](NEXT_TASK.md).
 
 ---
 
@@ -52,6 +56,48 @@ Every future entry follows this template exactly — copy it, fill it in, prepen
 ---
 
 ## Entries
+
+### 2026-10-27 — Sprint 2, Tasks 7 + 8: Notification Permission onboarding step + `POST /devices`
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 7 (Notification Permission onboarding step) + Task 8 (`POST /devices` endpoint), implemented together since Task 7's "register the push token" affordance needs Task 8's real endpoint
+**Objective:** Add the 5th and final onboarding step (contextual copy before the OS permission prompt, grant/deny/skip without blocking onboarding, per docs/features/onboarding.md F-ONB-05) and the backend endpoint it registers a push token against, reusing the existing `devices`/session-management infrastructure rather than inventing new schema.
+
+**Files Changed:**
+- `backend/app/Modules/Auth/Http/Requests/RegisterDeviceRequest.php` — new; `pushToken` validation
+- `backend/app/Modules/Auth/Http/Controllers/DeviceController.php` — new; `store()` → 204
+- `backend/app/Modules/Auth/Services/AuthService.php` — `registerPushToken()`, reusing `currentDeviceId`/`SessionNotFoundException`
+- `backend/app/Modules/Auth/routes.php` — new `POST /devices` route (general `api` limiter)
+- `backend/tests/Feature/Auth/DeviceTest.php` — new; 7 tests (happy path, validation, auth, idempotency, cross-user isolation, missing-`did`-claim edge case)
+- `mobile/lib/features/onboarding/data/{devices_api,devices_repository}.dart` — new; real (not mocked) `POST /devices` client, matching Task 8 shipping in this same session
+- `mobile/lib/features/onboarding/data/push_notification_permission_client.dart` — new; interface + `UnavailablePushNotificationPermissionClient` (no permission_handler/firebase_messaging plugin exists yet)
+- `mobile/lib/core/di/{devices_providers,push_notification_providers}.dart` — new DI wiring
+- `mobile/lib/features/onboarding/presentation/notification_permission_step.dart` — new; the 5th step
+- `mobile/lib/features/onboarding/application/{onboarding_state,onboarding_notifier}.dart` — 5th `OnboardingStep`, `requestNotificationPermission()`
+- `mobile/lib/features/onboarding/presentation/{meet_your_coach_step,onboarding_flow_screen}.dart` — Meet Your Coach's button now advances to this step instead of finishing onboarding directly
+- `mobile/test/unit/{devices_repository_test,onboarding_notifier_test}.dart`, `mobile/test/widget/notification_permission_step_test.dart` — new
+- `mobile/test/widget/onboarding_flow_screen_test.dart` — updated for the renamed button and the extended 5-step flow
+
+**Database Changes:**
+- None (reuses the existing `devices` table's `push_token` column, unused until now)
+
+**API Changes:**
+- `POST /devices` (new) — registers/updates the push token on the current session's device row
+
+**Flutter Changes:**
+- Notification Permission step (new); Meet Your Coach step's "Finish" renamed to "Continue" and repurposed
+
+**Tests Executed:**
+- Backend (isolated production-server test environment, same pattern as prior sessions): `composer validate --strict` clean; Pint 120 files clean; Pest **167 passed, 611 assertions** (was 160; +7 `DeviceTest.php`)
+- Mobile: `flutter analyze` clean; `flutter test` **139/139 passing** (was 125; +14: 7 `devices_repository_test.dart`, 4 `onboarding_notifier_test.dart`, 3 `notification_permission_step_test.dart`); `dart format --set-exit-if-changed` clean; `flutter build apk --release` SUCCESS (52.4MB)
+
+**Known Issues:**
+- Push notification registration is not actually functional for real users yet (no permission plugin, no Firebase project) — see `ENGINEERING_DECISION_LOG.md`'s 2026-10-27 entry. `POST /devices` itself is fully functional and tested; it's simply never called in production until that infrastructure exists.
+- Goal creation during onboarding (Task 5) remains mock-backed — unaffected by this session, tracked separately.
+
+**Git Commit:** `<not committed — working tree changes only, delivered for review per this session's instruction>`
+
+**Next Task:** Sprint 2, Task 10 (widget tests: onboarding flow navigation, skip/resume behavior) — see [NEXT_TASK.md](NEXT_TASK.md)
 
 ### 2026-09-29 — Task 20: final scope reconciliation (documentation-only)
 

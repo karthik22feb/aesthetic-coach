@@ -50,6 +50,73 @@ Copy this template for every new entry:
 
 ## Entries
 
+### 2026-10-27 — `POST /devices` updates the current session's existing device row; never creates a new one
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 8 (`POST /devices` endpoint)
+**Decision Summary:** `AuthService::registerPushToken()` updates the `push_token` column on the `devices` row already created at register/login time for the *current* session (identified via `$user->currentDeviceId`, the JWT `did` claim already used by `GET /auth/sessions`'s `isCurrent`). It never inserts a new `devices` row, and a missing/unowned device throws the existing `SessionNotFoundException` (404) rather than a new exception class.
+
+**Background:** `docs/05-api-specification.md § 6.11` documents only "POST /devices | Register device push token" -- no request/response shape, and no note on create-vs-update semantics. Inspecting `AuthService::registerDevice()` (the method that already runs on every register/login) showed every session already gets its own `devices` row with `push_token` left `null` -- so `POST /devices`'s only real job is filling that in, not creating a second row per device.
+
+**Alternatives Considered:**
+- Create a new `devices` row per `POST /devices` call -- rejected: would produce duplicate device rows per physical device per app session, polluting `GET /auth/sessions`'s listing (which already surfaces every `devices` row) with phantom "sessions" that don't correspond to real login events.
+- Accept a `deviceId` in the request body and update that row -- rejected: `currentDeviceId` is already a trusted, request-scoped value (set from the token, not client input) for exactly this purpose; accepting a client-supplied id would reopen the IDOR surface the `did`-claim mechanism was built to close, and would duplicate what the JWT already proves.
+- A new `DeviceNotFoundException` -- considered, since the message "Session not found" reads slightly oddly from a device-registration endpoint, but rejected as unnecessary proliferation: it's the exact same underlying condition `SessionNotFoundException` already covers (no owned `devices` row for this id), and this project's own exception already documents that it "covers both a genuinely nonexistent device ID and a device ID that belongs to another user."
+- Reuse `SessionNotFoundException`, update-not-create semantics (chosen) -- smallest, most consistent change; reuses an already-tested, already-security-reviewed code path (`SessionController`'s own device-ownership query) rather than introducing a parallel one.
+
+**Final Decision:** `DeviceController::store()` calls `AuthService::registerPushToken(User $user, string $pushToken)`, which looks up `Device::where('user_id', $user->id)->where('id', $user->currentDeviceId)->first()`, throws `SessionNotFoundException` if not found, otherwise updates `push_token` and returns `204 No Content`.
+
+**Reasoning:** Every register/login already creates exactly one `devices` row per session; `POST /devices` filling in that row's one missing field is the narrowest correct interpretation of "register device push token" consistent with the schema as it already exists, and reusing `SessionNotFoundException`/the `currentDeviceId` mechanism means this endpoint inherits already-reviewed IDOR protection rather than needing its own.
+
+**Impact:** `GET /auth/sessions` immediately benefits from this -- any session with a registered push token is visible there with no additional work. A token issued before the `did` claim existed (or, defensively, one without it for any reason) gets a clean 404 rather than silently creating an orphaned device row; `DeviceTest.php` forges exactly such a token (mirroring `JwtValidationTest.php`'s pattern) to prove this fails closed.
+
+**Related Files:**
+- `backend/app/Modules/Auth/Services/AuthService.php` (`registerPushToken`)
+- `backend/app/Modules/Auth/Http/Controllers/DeviceController.php`
+- `backend/tests/Feature/Auth/DeviceTest.php`
+
+**Related Documentation:**
+- [docs/05-api-specification.md § 6.11 Notifications](docs/05-api-specification.md#611-notifications)
+- [docs/04-database-design.md § 3.1](docs/04-database-design.md#31-identity--auth) (`devices` table)
+
+**Git Commit:** `<pending -- working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Sprint 2 Tasks 7+8 implementation session
+
+### 2026-10-27 — Notification-permission request and push token retrieval stand in behind an unavailable client, not a plugin
+
+**Sprint:** Phase 1 · Sprint 2
+**Task ID:** Sprint 2, Task 7 (Notification Permission onboarding step)
+**Decision Summary:** `OnboardingNotifier.requestNotificationPermission()` calls `PushNotificationPermissionClient.requestPermission()`, bound in `core/di/push_notification_providers.dart` to `UnavailablePushNotificationPermissionClient` -- the only implementation, which always resolves to `granted: false, pushToken: null`. No real OS permission dialog is ever shown and `DevicesRepository.registerDevice()` is therefore never actually called in a shipped build today, per this task's own instruction ("register ... only when permission is granted and a real token is available").
+
+**Background:** Requesting a real OS notification permission (iOS `UNUserNotificationCenter`, Android 13+ `POST_NOTIFICATIONS`) and obtaining a real push token both require a plugin this project doesn't have (`permission_handler`/`firebase_messaging` are not in `mobile/pubspec.yaml`), and a real token additionally needs a configured Firebase project -- `INFRASTRUCTURE_READINESS.md` lists "Firebase Project" as unconfigured, needed by Sprint 5. This is the same shape of gap Task 5 hit with `POST /goals` and Task 6 hit with the AI-generation flag, except here the missing piece is *client platform capability*, not a missing backend endpoint -- `POST /devices` (Task 8, this same session) is real and fully wired up.
+
+**Alternatives Considered:**
+- Add `permission_handler` + `firebase_messaging` now and wire up the real flow -- rejected: a full push-notification-infrastructure setup (Firebase console project, `google-services.json`/`GoogleService-Info.plist`, platform Gradle/Pod changes) is explicitly Sprint 5 scope per `INFRASTRUCTURE_READINESS.md`, and well beyond "the onboarding step" (Task 7) or "the backend endpoint" (Task 8).
+- A bare `Future<PushPermissionResult>` function instead of an interface -- rejected: this codebase's established convention for exactly this situation (`GoalsApiClient`/`MockGoalsApi`, `aiOnboardingGenerationEnabledProvider`) is an interface behind a Riverpod provider, so the real implementation is a one-line DI swap later, not a rewrite.
+- Return `granted: true` with a fake token to exercise the registration path end-to-end now -- rejected outright: this task explicitly requires registering a token "only when ... a real token is available," and a fake token would be indistinguishable from a real one to the backend, silently polluting real `devices` rows with garbage push tokens.
+
+**Final Decision:** `PushNotificationPermissionClient` (interface) + `UnavailablePushNotificationPermissionClient` (the only, honest-about-its-limits implementation) in `features/onboarding/data/push_notification_permission_client.dart`. The onboarding notifier and screen are written against the interface and don't know or care that the bound implementation can't do anything real yet -- a future Sprint 5 session adds a real plugin-backed implementation and swaps the one line in `push_notification_providers.dart`.
+
+**Reasoning:** Keeps the Notification Permission step's grant/deny/skip UI and the device-registration call site fully built, fully tested, and structurally correct today, without inventing platform infrastructure this task was never scoped to set up, and without faking success in a way that would misrepresent what the app can actually do.
+
+**Impact:** No real end user's device is ever registered for push notifications by this build -- `requestNotificationPermission()`'s "granted" branch (and the resulting `DevicesRepository.registerDevice()` call) is only reachable in tests that override the provider, not in production. This is a real, user-facing limitation, not just an internal one, and should be called out if this flow is ever demoed or tested expecting real push notifications to arrive.
+
+**Related Files:**
+- `mobile/lib/features/onboarding/data/push_notification_permission_client.dart`
+- `mobile/lib/core/di/push_notification_providers.dart`
+- `mobile/lib/features/onboarding/application/onboarding_notifier.dart` (`requestNotificationPermission`)
+- `mobile/lib/features/onboarding/presentation/notification_permission_step.dart`
+
+**Related Documentation:**
+- [INFRASTRUCTURE_READINESS.md](INFRASTRUCTURE_READINESS.md) (Firebase Project row)
+- [docs/features/onboarding.md § F-ONB-05](docs/features/onboarding.md#functional-requirements) and [§ Edge Cases](docs/features/onboarding.md#edge-cases)
+- The 2026-10-07 "Onboarding goal creation backed by a mock `GoalsApiClient`" and 2026-10-15 "AI-generation call gated behind a hardcoded-off feature flag" entries in this log (the precedent this mirrors)
+
+**Git Commit:** `<pending -- working tree changes not yet committed, see this session's report>`
+
+**Author:** Claude (AI Software Engineer), Sprint 2 Tasks 7+8 implementation session
+
 ### 2026-10-15 — "Meet Your Coach" AI-generation call gated behind a hardcoded-off feature flag, not a server-driven one
 
 **Sprint:** Phase 1 · Sprint 2

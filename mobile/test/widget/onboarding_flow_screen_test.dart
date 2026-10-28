@@ -7,6 +7,8 @@ import 'package:aesthetic_coach/core/error/failure.dart';
 import 'package:aesthetic_coach/features/auth/application/auth_notifier.dart';
 import 'package:aesthetic_coach/features/auth/data/auth_repository.dart';
 import 'package:aesthetic_coach/features/auth/data/models/auth_user.dart';
+import 'package:aesthetic_coach/core/di/devices_providers.dart';
+import 'package:aesthetic_coach/features/onboarding/data/devices_repository.dart';
 import 'package:aesthetic_coach/features/onboarding/data/goals_repository.dart';
 import 'package:aesthetic_coach/features/onboarding/data/models/goal.dart';
 import 'package:aesthetic_coach/features/onboarding/data/models/onboarding_enums.dart';
@@ -98,10 +100,24 @@ class _FakeGoalsRepository implements GoalsRepositoryContract {
   }
 }
 
+class _FakeDevicesRepository implements DevicesRepositoryContract {
+  Object? registerDeviceError;
+  String? lastRegisteredToken;
+  int registerDeviceCallCount = 0;
+
+  @override
+  Future<void> registerDevice(String pushToken) async {
+    registerDeviceCallCount++;
+    lastRegisteredToken = pushToken;
+    if (registerDeviceError != null) throw registerDeviceError!;
+  }
+}
+
 ProviderContainer _buildContainer({
   required _FakeAuthRepository authRepository,
   required _FakeProfileRepository profileRepository,
   required _FakeGoalsRepository goalsRepository,
+  _FakeDevicesRepository? devicesRepository,
   bool? aiOnboardingGenerationEnabled,
 }) {
   final container = ProviderContainer(
@@ -109,6 +125,8 @@ ProviderContainer _buildContainer({
       authRepositoryProvider.overrideWithValue(authRepository),
       profileRepositoryProvider.overrideWithValue(profileRepository),
       goalsRepositoryProvider.overrideWithValue(goalsRepository),
+      if (devicesRepository != null)
+        devicesRepositoryProvider.overrideWithValue(devicesRepository),
       if (aiOnboardingGenerationEnabled != null)
         aiOnboardingGenerationEnabledProvider.overrideWithValue(
           aiOnboardingGenerationEnabled,
@@ -191,7 +209,7 @@ void main() {
     tearDown(() => container.dispose());
 
     testWidgets(
-      'completing all 3 steps submits profile basics, creates the selected goal, and finishes to Home',
+      'completing all 5 steps submits profile basics, creates the selected goal, and finishes to Home',
       (tester) async {
         await _registerAndReachOnboarding(tester, container);
 
@@ -251,7 +269,7 @@ void main() {
 
         // Step 4: Meet Your Coach -- the fake user is email-verified and
         // the AI-generation flag defaults to off, so the deferred state
-        // shows; Finish reaches Home either way.
+        // shows; Continue advances to Notification Permission.
         expect(
           find.byKey(const Key('onboarding_meet_coach_welcome_text')),
           findsOneWidget,
@@ -261,7 +279,21 @@ void main() {
           findsOneWidget,
         );
         await tester.tap(
-          find.byKey(const Key('onboarding_meet_coach_finish_button')),
+          find.byKey(const Key('onboarding_meet_coach_continue_button')),
+        );
+        await tester.pumpAndSettle();
+
+        // Step 5: Notification Permission -- "Not now" reaches Home.
+        expect(
+          find.byKey(
+            const Key('onboarding_notification_permission_welcome_text'),
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.byKey(
+            const Key('onboarding_notification_permission_skip_button'),
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -343,7 +375,7 @@ void main() {
     });
 
     testWidgets(
-      'shows the verification-required state for an unverified user, and Finish still reaches Home',
+      'shows the verification-required state for an unverified user, and Continue still advances (BR-2: non-blocking)',
       (tester) async {
         fakeAuthRepository.registerEmailVerified = false;
         final container = _buildContainer(
@@ -370,13 +402,19 @@ void main() {
           findsNothing,
         );
 
-        // BR-2: non-blocking -- Finish still reaches Home.
+        // BR-2: non-blocking -- Continue still advances to the next step,
+        // not stuck here waiting for verification.
         await tester.tap(
-          find.byKey(const Key('onboarding_meet_coach_finish_button')),
+          find.byKey(const Key('onboarding_meet_coach_continue_button')),
         );
         await tester.pumpAndSettle();
 
-        expect(find.byKey(const Key('home_screen_content')), findsOneWidget);
+        expect(
+          find.byKey(
+            const Key('onboarding_notification_permission_welcome_text'),
+          ),
+          findsOneWidget,
+        );
       },
     );
 
@@ -434,23 +472,24 @@ void main() {
       },
     );
 
-    testWidgets('Finish clears justRegistered regardless of state', (
-      tester,
-    ) async {
-      final container = _buildContainer(
-        authRepository: fakeAuthRepository,
-        profileRepository: fakeProfileRepository,
-        goalsRepository: fakeGoalsRepository,
-      );
-      addTearDown(container.dispose);
+    testWidgets(
+      'Continue does not clear justRegistered -- onboarding is not finished yet',
+      (tester) async {
+        final container = _buildContainer(
+          authRepository: fakeAuthRepository,
+          profileRepository: fakeProfileRepository,
+          goalsRepository: fakeGoalsRepository,
+        );
+        addTearDown(container.dispose);
 
-      await _advanceToMeetYourCoach(tester, container);
-      await tester.tap(
-        find.byKey(const Key('onboarding_meet_coach_finish_button')),
-      );
-      await tester.pumpAndSettle();
+        await _advanceToMeetYourCoach(tester, container);
+        await tester.tap(
+          find.byKey(const Key('onboarding_meet_coach_continue_button')),
+        );
+        await tester.pumpAndSettle();
 
-      expect(container.read(authNotifierProvider).justRegistered, isFalse);
-    });
+        expect(container.read(authNotifierProvider).justRegistered, isTrue);
+      },
+    );
   });
 }

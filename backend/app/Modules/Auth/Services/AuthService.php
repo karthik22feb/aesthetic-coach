@@ -364,6 +364,39 @@ class AuthService
     }
 
     /**
+     * Sprint 2, Task 8 -- updates the push token on the device tied to the
+     * *current* request's access token (`$user->currentDeviceId`, set from
+     * the JWT's `did` claim by AuthServiceProvider -- the same mechanism
+     * SessionResource already uses for `isCurrent`), per
+     * docs/05-api-specification.md section 6.11 ("Register device push
+     * token"). Never creates a new `devices` row -- one already exists for
+     * this session, created by registerDevice() at register/login time.
+     *
+     * Reuses SessionNotFoundException (not a new exception class) for a
+     * missing/not-owned device: this is the same underlying condition
+     * (no `devices` row for this user matching this id) that endpoint
+     * already covers, just reached from a token issued before the `did`
+     * claim existed or (defensively) tampered with -- not expected in
+     * practice, since every token issued after that feature landed
+     * carries a `did` for a device this same request just authenticated
+     * with.
+     *
+     * @throws SessionNotFoundException
+     */
+    public function registerPushToken(User $user, string $pushToken): void
+    {
+        $device = Device::where('user_id', $user->id)
+            ->where('id', $user->currentDeviceId)
+            ->first();
+
+        if ($device === null) {
+            throw new SessionNotFoundException;
+        }
+
+        $device->update(['push_token' => $pushToken]);
+    }
+
+    /**
      * Issues a password reset token and emails it, per FR-105 ("Reset link
      * expires in 60 minutes, single use"). Deliberately silent (no
      * exception, no signal of any kind) when the email doesn't match a
